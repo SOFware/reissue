@@ -5,7 +5,7 @@ require "test_helper"
 class TestChangelogUpdater < Minitest::Spec
   describe "call" do
     before do
-      @file = File.expand_path("fixtures/CHANGELOG.md", __dir__)
+      @file = File.expand_path("fixtures/changelog.md", __dir__)
       @tempfile = Tempfile.new
       @changelog_updater = Reissue::ChangelogUpdater.new(@file)
     end
@@ -34,7 +34,7 @@ class TestChangelogUpdater < Minitest::Spec
 
   describe "update" do
     before do
-      @file = File.expand_path("fixtures/CHANGELOG.md", __dir__)
+      @file = File.expand_path("fixtures/changelog.md", __dir__)
       @changelog_updater = Reissue::ChangelogUpdater.new(@file)
     end
 
@@ -62,7 +62,7 @@ class TestChangelogUpdater < Minitest::Spec
 
   describe "write" do
     before do
-      @file = File.expand_path("fixtures/CHANGELOG.md", __dir__)
+      @file = File.expand_path("fixtures/changelog.md", __dir__)
       @changelog_updater = Reissue::ChangelogUpdater.new(@file)
     end
 

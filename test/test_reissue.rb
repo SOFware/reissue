@@ -21,7 +21,7 @@ class TestReissue < Minitest::Spec
       version_file << File.read(fixture_version)
       version_file.close
 
-      fixture_changelog = File.expand_path("fixtures/CHANGELOG.md", __dir__)
+      fixture_changelog = File.expand_path("fixtures/changelog.md", __dir__)
       changelog_file = Tempfile.new
       changelog_file << File.read(fixture_changelog)
       changelog_file.close
@@ -42,7 +42,7 @@ class TestReissue < Minitest::Spec
 
   describe "finalize" do
     it "updates the contents of the changelog file" do
-      fixture_changelog = File.expand_path("fixtures/CHANGELOG.md", __dir__)
+      fixture_changelog = File.expand_path("fixtures/changelog.md", __dir__)
       changelog_file = Tempfile.new
       changelog_file << File.read(fixture_changelog)
       changelog_file.close
