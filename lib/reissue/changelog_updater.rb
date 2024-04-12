@@ -44,7 +44,7 @@ module Reissue
     def update(version, date: "Unreleased", changes: {})
       @changelog = Keepachangelog::MarkdownParser.parse(File.read(@changelog_file))
 
-      changelog["versions"][version] = { "date" => date, "changes" => changes }
+      changelog["versions"][version] = {"date" => date, "changes" => changes}
       changes.each do |section, change|
         changelog["versions"][version]["changes"][section] = change
       end
