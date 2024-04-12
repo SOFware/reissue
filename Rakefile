@@ -26,3 +26,7 @@ namespace :reissue do
     Reissue.finalize(date, changelog_file: "CHANGELOG.md")
   end
 end
+
+Rake::Task["release"].enhance do
+  Rake::Task[:reissue].invoke("patch")
+end
