@@ -17,6 +17,7 @@ task :reissue, [:segment] => ["build:checksum"] do |task, args|
   require "reissue"
   segment = args[:segment] || "patch"
   Reissue.call(segment: segment, version_file: "lib/reissue/version.rb")
+  `bundle install`
 end
 
 namespace :reissue do
