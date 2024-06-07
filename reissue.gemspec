@@ -17,10 +17,10 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = spec.homepage
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
 
-  spec.files = Dir["lib/**/*.rb", "Rakefile", "README.md", "CHANGELOG.md", "LICENSE.txt", "exe/*"]
+  spec.files = Dir["lib/**/*", "Rakefile", "README.md", "CHANGELOG.md", "LICENSE.txt", "exe/*"]
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "keepachangelog"
+  spec.add_dependency "rake"
 end

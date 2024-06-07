@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     reissue (0.1.1)
-      keepachangelog
+      rake
 
 GEM
   remote: https://rubygems.org/
@@ -17,9 +17,6 @@ GEM
       rdoc
       reline (>= 0.4.2)
     json (2.7.2)
-    keepachangelog (0.6.1)
-      json (~> 2.1)
-      thor (~> 0.20)
     language_server-protocol (3.17.0.3)
     lint_roller (1.1.0)
     minitest (5.22.3)
@@ -74,7 +71,6 @@ GEM
       lint_roller (~> 1.1)
       rubocop-performance (~> 1.20.2)
     stringio (3.1.0)
-    thor (0.20.3)
     unicode-display_width (2.5.0)
 
 PLATFORMS
