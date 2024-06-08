@@ -44,7 +44,7 @@ module Reissue
       desc description
       task name, [:segment] do |task, args|
         segment = args[:segment] || "patch"
-        Reissue.call(segment:, version_file:)
+        new_version = Reissue.call(segment:, version_file:, version_limit:)
         if defined?(Bundler)
           Bundler.with_unbundled_env do
             system("bundle install")
@@ -56,7 +56,7 @@ module Reissue
           system("git add #{updated_paths.join(" ")}")
         end
 
-        bump_message = "Bump version to #{Reissue::VERSION}"
+        bump_message = "Bump version to #{new_version}"
         if commit
           system("git commit -m '#{bump_message}'")
         else
