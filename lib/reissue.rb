@@ -32,4 +32,12 @@ module Reissue
     changelog_updater = ChangelogUpdater.new(changelog_file)
     changelog_updater.finalize(date:, changelog_file:)
   end
+
+  # Reformats the changelog file to ensure it is correctly formatted.
+  #
+  # @param file [String] The path to the changelog file.
+  def self.reformat(file)
+    changelog_updater = ChangelogUpdater.new(file)
+    changelog_updater.reformat
+  end
 end

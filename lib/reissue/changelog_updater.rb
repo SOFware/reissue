@@ -49,6 +49,16 @@ module Reissue
       changelog
     end
 
+    # Reformats the changelog file to ensure it is correctly formatted.
+    #
+    # @param changelog_file [String] The path to the changelog file (default: @changelog_file).
+    # @return [Hash] The parsed changelog.
+    def reformat
+      @changelog = Parser.parse(File.read(@changelog_file))
+      write
+      changelog
+    end
+
     # Returns the string representation of the changelog.
     #
     # @return [String] The Markdown string representation of the changelog.

@@ -10,6 +10,10 @@ class TestPrinter < Minitest::Spec
         "preamble" => "This is a changelog.",
         "versions" => [
           {
+            "version" => "1.0.1",
+            "date" => "Unreleased"
+          },
+          {
             "version" => "1.0.0",
             "date" => "2021-01-01",
             "changes" => {
@@ -23,6 +27,8 @@ class TestPrinter < Minitest::Spec
         # Changelog
 
         This is a changelog.
+
+        ## [1.0.1] - Unreleased
 
         ## [1.0.0] - 2021-01-01
 

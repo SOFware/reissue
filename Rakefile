@@ -26,6 +26,11 @@ namespace :reissue do
     date = args[:date] || Time.now.strftime("%Y-%m-%d")
     Reissue.finalize(date, changelog_file: "CHANGELOG.md")
   end
+
+  task :reformat do
+    require_relative "lib/reissue"
+    Reissue.reformat("CHANGELOG.md")
+  end
 end
 
 Rake::Task["release"].enhance do

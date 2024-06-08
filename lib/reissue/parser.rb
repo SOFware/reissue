@@ -52,6 +52,7 @@ module Reissue
         if next_line.match?(VERSION_MATCH)
           scanner.scan_until(/(.+)\n/)
           version, date = scanner[1].split(" - ")
+          date ||= "Unreleased"
           version = version.gsub(VERSION_BREAK, "").strip.tr("[]", "")
           changes = parse_changes(scanner)
           @versions[version] = {"version" => version, "date" => date, "changes" => changes}
@@ -82,7 +83,9 @@ module Reissue
       return collection if scanner.eos?
       scanner.skip(/\s+/)
       change = scanner.scan_until(/\n/)
-      if change.nil? || change.strip.empty? || change.match?(VERSION_OR_CHANGE_MATCH)
+      if change.nil? || change.strip.empty?
+        return collection
+      elsif change.match?(VERSION_OR_CHANGE_MATCH)
         scanner.unscan
         return collection
       else

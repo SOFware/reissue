@@ -15,6 +15,7 @@ module Reissue
       #{@preamble}
 
       #{@versions}
+
     MARKDOWN
 
     private
@@ -30,8 +31,8 @@ module Reissue
         changes_string = changes.map do |section, changes|
           format_section(section, changes)
         end.join("\n")
-        [version_string, "\n\n", changes_string].join
-      end.join("\n")
+        [version_string, changes_string].filter_map { |str| str unless str.empty? }.join("\n\n")
+      end.join("\n\n")
     end
 
     def format_section(section, changes)
