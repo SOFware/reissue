@@ -14,7 +14,7 @@ task default: :test
 
 desc "Prepare the code for work on a new version."
 task :reissue, [:segment] => ["build:checksum"] do |task, args|
-  require "reissue"
+  require_relative "lib/reissue"
   segment = args[:segment] || "patch"
   Reissue.call(segment: segment, version_file: "lib/reissue/version.rb")
   `bundle install`
@@ -22,7 +22,7 @@ end
 
 namespace :reissue do
   task :finalize, [:date] do |task, args|
-    require "reissue"
+    require_relative "lib/reissue"
     date = args[:date] || Time.now.strftime("%Y-%m-%d")
     Reissue.finalize(date, changelog_file: "CHANGELOG.md")
   end
