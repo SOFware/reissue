@@ -3,7 +3,6 @@
 require_relative "reissue/version"
 require_relative "reissue/version_updater"
 require_relative "reissue/changelog_updater"
-require_relative "reissue/parser"
 
 # Reissue is a module that provides functionality for updating version numbers and changelogs.
 module Reissue
