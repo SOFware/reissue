@@ -8,7 +8,6 @@ module Reissue
     def self.create name = :reissue, &block
       task = new name
       task.instance_eval(&block) if block
-      # task.process_env
       raise "No Reissue task.version_file specified" unless task.version_file
       task.define
       task

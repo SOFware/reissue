@@ -19,7 +19,3 @@ Reissue::Task.create :reissue do |task|
   task.version_file = "lib/reissue/version.rb"
   task.commit = false
 end
-
-Rake::Task["release"].enhance do
-  Rake::Task[:reissue].invoke("patch")
-end
