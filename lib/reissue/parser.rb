@@ -52,7 +52,7 @@ module Reissue
         if next_line.match?(VERSION_MATCH)
           scanner.scan_until(/(.+)\n/)
           version, date = scanner[1].split(" - ")
-          version = version.gsub(VERSION_BREAK, "").strip
+          version = version.gsub(VERSION_BREAK, "").strip.tr("[]", "")
           changes = parse_changes(scanner)
           @versions[version] = {"version" => version, "date" => date, "changes" => changes}
           parse_versions(scanner)
