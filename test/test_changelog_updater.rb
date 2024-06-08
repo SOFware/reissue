@@ -22,7 +22,7 @@ class TestChangelogUpdater < Minitest::Spec
     it "Updates the changelog with default values for unreleased versions" do
       @changelog_updater.call("1.0.0", changelog_file: @tempfile.path)
       contents = @changelog_updater.to_s
-      assert_match(/\[1.0\.0] - Unreleased/, contents)
+      assert_match(/\[1.0\.0\] - Unreleased/, contents)
     end
 
     it "Updates the changelog with a new date for the current version" do
