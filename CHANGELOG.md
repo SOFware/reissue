@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added:
 - bundle install when running reissue
 - Reissue::Parser class to parse the changelog file
+- handling of brackets in the changelog version numbers
 ### Fixed:
 - bug in tests loading the changelog fixture
 ### Removed:
