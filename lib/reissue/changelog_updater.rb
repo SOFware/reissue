@@ -1,5 +1,5 @@
-require "reissue/parser"
-require "reissue/printer"
+require_relative "parser"
+require_relative "printer"
 
 module Reissue
   # Updates the changelog file with new versions and changes.
