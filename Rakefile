@@ -17,7 +17,14 @@ task :reissue, [:segment] => ["build:checksum"] do |task, args|
   require_relative "lib/reissue"
   segment = args[:segment] || "patch"
   Reissue.call(segment: segment, version_file: "lib/reissue/version.rb")
-  `bundle install`
+  if defined?(Bundler)
+    Bundler.with_unbundled_env do
+      system("bundle install")
+    end
+  end
+  system("git add -u")
+  system("git add checksums") if Dir.exist?("checksums") && !Dir.empty?("checksums")
+  system("git commit -m 'Bump version to #{Reissue::VERSION}'")
 end
 
 namespace :reissue do
