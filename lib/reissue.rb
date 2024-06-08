@@ -13,6 +13,7 @@ module Reissue
   # @param segment [String] The segment of the version number to update.
   # @param date [String] The release date.
   # @param changes [Hash] The changes made in this release.
+  #
   # @return [String] The new version number.
   def self.call(version_file:, changelog_file: "CHANGELOG.md", segment: "patch", date: "Unreleased", changes: {})
     version_updater = VersionUpdater.new(version_file)
@@ -28,9 +29,12 @@ module Reissue
   #
   # @param date [String] The release date.
   # @param changelog_file [String] The path to the changelog file.
+  #
+  # @return [Array] The version number and release date.
   def self.finalize(date = Date.today, changelog_file: "CHANGELOG.md")
     changelog_updater = ChangelogUpdater.new(changelog_file)
-    changelog_updater.finalize(date:, changelog_file:)
+    changelog = changelog_updater.finalize(date:, changelog_file:)
+    changelog["versions"].first.slice("version", "date")
   end
 
   # Reformats the changelog file to ensure it is correctly formatted.
