@@ -26,7 +26,7 @@ module Reissue
     def finalize(date: Date.today, changelog_file: @changelog_file)
       @changelog = Parser.parse(File.read(changelog_file))
       # find the highest version number and if it is unreleased, update the date
-      version = changelog["versions"].max_by { |v| Gem::Version.new(v["version"]) }
+      version = changelog["versions"].max_by { |v| ::Gem::Version.new(v["version"]) }
       version_date = version["date"]
       if version_date.nil? || version_date == "Unreleased"
         changelog["versions"].find do |v|
