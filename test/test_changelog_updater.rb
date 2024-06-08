@@ -13,7 +13,7 @@ class TestChangelogUpdater < Minitest::Spec
     it "updates the contents of the changelog file" do
       @changelog_updater.call("1.0.0", date: "2020-01-01", changes: {"Added" => ["Feature 1"]}, changelog_file: @tempfile.path)
       contents = @changelog_updater.to_s
-      assert_match(/# 1.0.0/, contents)
+      assert_match(/# \[1.0.0\]/, contents)
       assert_match(/2020-01-01/, contents)
       assert_match(/Added/, contents)
       assert_match(/Feature 1/, contents)
@@ -22,7 +22,7 @@ class TestChangelogUpdater < Minitest::Spec
     it "Updates the changelog with default values for unreleased versions" do
       @changelog_updater.call("1.0.0", changelog_file: @tempfile.path)
       contents = @changelog_updater.to_s
-      assert_match(/[1.0] - Unreleased/, contents)
+      assert_match(/\[1.0\.0] - Unreleased/, contents)
     end
 
     it "Updates the changelog with a new date for the current version" do
@@ -41,7 +41,7 @@ class TestChangelogUpdater < Minitest::Spec
     it "updates the contents of the changelog file" do
       @changelog_updater.update("1.0.0", date: "2020-01-01", changes: {"Added" => ["Feature 1"]})
       contents = @changelog_updater.to_s
-      assert_match(/# 1.0.0/, contents)
+      assert_match(/# \[1.0.0\]/, contents)
       assert_match(/2020-01-01/, contents)
       assert_match(/Added/, contents)
       assert_match(/Feature 1/, contents)
@@ -50,7 +50,7 @@ class TestChangelogUpdater < Minitest::Spec
     it "Updates the changelog with default values for unreleased versions" do
       @changelog_updater.update("1.0.0")
       contents = @changelog_updater.to_s
-      assert_match(/[1.0] - Unreleased/, contents)
+      assert_match(/\[1.0.0\] - Unreleased/, contents)
     end
 
     it "Updates the changelog with a new date for the current version" do
@@ -71,7 +71,7 @@ class TestChangelogUpdater < Minitest::Spec
       tempfile = Tempfile.new
       @changelog_updater.write(tempfile.path)
       contents = File.read(tempfile)
-      assert_match(/# 1.0.0/, contents)
+      assert_match(/# \[1.0.0\]/, contents)
       assert_match(/2020-01-01/, contents)
       assert_match(/Added/, contents)
       assert_match(/Feature 1/, contents)

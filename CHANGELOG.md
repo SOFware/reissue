@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## 0.1.1 - Unreleased
 ### Added:
 - bundle install when running reissue
-- Reissue::Parser class to parse the changelog file
 - handling of brackets in the changelog version numbers
+- Reissue::Parser class to parse the changelog file
+- Reissue::Printer class to print the changelog file
 ### Fixed:
 - bug in tests loading the changelog fixture
 ### Removed:

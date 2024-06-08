@@ -51,7 +51,7 @@ class TestReissue < Minitest::Spec
 
       contents = File.read(changelog_file)
 
-      assert_match(/0.1.2 - 2021-01-01/, contents)
+      assert_match(/\[0.1.2\] - 2021-01-01/, contents)
     end
   end
 end
