@@ -15,7 +15,6 @@ module Reissue
       #{@preamble}
 
       #{@versions}
-
     MARKDOWN
 
     private
