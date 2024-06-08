@@ -26,8 +26,9 @@ module Reissue
         changes = data.fetch("changes") do
           {}
         end
-        <<~MARKDOWN
+        <<~MARKDOWN.squeeze("\n")
           ## #{version} - #{date}
+
           #{changes.map { |section, changes| format_section(section, changes) }.join("\n")}
         MARKDOWN
       end.join("\n")
