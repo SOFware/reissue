@@ -18,7 +18,7 @@ module Reissue
     MARKDOWN
 
     def to_s
-      Kramdown::Document.new(template).to_kramdown
+      template
     end
 
     private
