@@ -9,17 +9,13 @@ module Reissue
       @versions = versions
     end
 
-    def template = <<~MARKDOWN
+    def to_s = <<~MARKDOWN
       # #{@title}
 
       #{@preamble}
 
       #{@versions}
     MARKDOWN
-
-    def to_s
-      template
-    end
 
     private
 
