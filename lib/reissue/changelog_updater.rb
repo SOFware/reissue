@@ -33,7 +33,7 @@ module Reissue
           v["version"] == version["version"]
         end["date"] = date
       end
-      write(changelog_file)
+      write
       changelog
     end
 
