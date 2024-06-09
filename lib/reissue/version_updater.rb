@@ -2,7 +2,7 @@ module Reissue
   # Provides versioning functionality for the application.
   module Versioning
     # Provides versioning functionality for the application.
-    refine Gem::Version do
+    refine ::Gem::Version do
       # Redoes the version based on the specified segment_name.
       #
       # @param segment_name [Symbol] The segment_name to redo the version.
@@ -10,11 +10,11 @@ module Reissue
       # @return [Gem::Version] The updated version.
       def redo(segment_name)
         if segment_name.to_s == "major"
-          Gem::Version.new("#{segments[0].to_i + 1}.0.0")
+          ::Gem::Version.new("#{segments[0].to_i + 1}.0.0")
         elsif segment_name.to_s == "minor"
-          Gem::Version.new("#{segments[0]}.#{segments[1].to_i + 1}.0")
+          ::Gem::Version.new("#{segments[0]}.#{segments[1].to_i + 1}.0")
         else
-          Gem::Version.new("#{segments[0]}.#{segments[1]}.#{segments[2].to_i + 1}")
+          ::Gem::Version.new("#{segments[0]}.#{segments[1]}.#{segments[2].to_i + 1}")
         end
       end
     end

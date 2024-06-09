@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.1.2] - Unreleased
+
+### Fixed:
+
+- Fix references to Gem::Version from the top level
+
 ## [0.1.1] - 2024-06-08
 
 ### Added:
@@ -27,9 +33,3 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Removed:
 
 - dependency on the keepachangelog gem
-
-## [0.1.0] - 2024-04-11
-
-### Added:
-
-- Initial release
