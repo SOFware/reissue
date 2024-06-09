@@ -13,7 +13,7 @@ module Reissue
     end
 
     def parse
-      scanner = StringScanner.new(@changelog)
+      scanner = StringScanner.new(@changelog) << "\n"
       @parts << parse_title(scanner)
       @parts << parse_preamble(scanner)
       @parts << parse_versions(scanner)

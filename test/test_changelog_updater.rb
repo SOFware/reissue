@@ -100,7 +100,7 @@ class TestChangelogUpdater < Minitest::Spec
     end
 
     it "reformats the contents of the changelog file" do
-      changelog = <<~FILE
+      changelog = <<~FILE.chomp
         # CHANGELOG
         All updates to the application will be tracked here per released version.
         ## [2024.1.A] - Unreleased
