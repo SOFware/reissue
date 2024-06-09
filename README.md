@@ -12,6 +12,15 @@ update the changelog with a new version and a date.
 
 Use Reissue to prepare your first commit going into the new version.
 
+Standard procedure for releasing projects with Reissue:
+
+1. Create a version with some number like 0.1.0.
+2. Add commits to the project. These will be associated with the version 0.1.0.
+3. When you are releasing your project, finalize it by running
+  `rake reissue:finalize` to update the Unreleased version in your changelog.
+4. Bump the version to 0.1.1 with `rake reissue[patch]` and commit those changes.
+   Future commits will be associated with the version 0.1.1 until your next release.
+
 ## Installation
 
 Install the gem and add to the application's Gemfile by executing:
