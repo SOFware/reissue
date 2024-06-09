@@ -54,5 +54,17 @@ class TestParser < Minitest::Spec
         changes.dig("versions", 1, "changes")
       )
     end
+
+    it "handles files without an empty last line" do
+      changelog = File.read("test/fixtures/changelog.md").chomp
+
+      # It still parses
+      changes = Reissue::Parser.parse(changelog)
+
+      assert_equal(
+        "Change Log",
+        changes["title"]
+      )
+    end
   end
 end

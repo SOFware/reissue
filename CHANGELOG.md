@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.1.4] - Unreleased
 
+### Fixed
+
+- Handle changlog files without an empty last line
+
 ## [0.1.3] - 2024-06-09
 
 ### Added

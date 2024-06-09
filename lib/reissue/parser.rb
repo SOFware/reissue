@@ -67,7 +67,9 @@ module Reissue
       scanner.skip(/\s+/)
 
       next_line = scanner.scan_until(/\n/)
-      if next_line.nil? || next_line.strip.empty? || next_line.match?(VERSION_MATCH)
+      if next_line.nil? || next_line.strip.empty?
+        return changes
+      elsif next_line.match?(VERSION_MATCH)
         scanner.unscan
         return changes
       end
