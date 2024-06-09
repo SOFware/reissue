@@ -92,4 +92,38 @@ class TestChangelogUpdater < Minitest::Spec
       assert_match(/Feature 1/, contents)
     end
   end
+
+  describe "reformat" do
+    before do
+      @file = File.expand_path("fixtures/changelog.md", __dir__)
+      @changelog_updater = Reissue::ChangelogUpdater.new(@file)
+    end
+
+    it "reformats the contents of the changelog file" do
+      changelog = <<~FILE
+        # CHANGELOG
+        All updates to the application will be tracked here per released version.
+        ## [2024.1.A] - Unreleased
+        ### Added
+        - Tasks for automating the updates to version and changelog.
+      FILE
+      tempfile = Tempfile.new
+      File.write(tempfile, changelog)
+
+      updater = Reissue::ChangelogUpdater.new(tempfile.path)
+      updater.reformat
+      contents = tempfile.read
+      assert_equal(<<~FILE, contents)
+        # CHANGELOG
+
+        All updates to the application will be tracked here per released version.
+
+        ## [2024.1.A] - Unreleased
+
+        ### Added
+
+        - Tasks for automating the updates to version and changelog.
+      FILE
+    end
+  end
 end
