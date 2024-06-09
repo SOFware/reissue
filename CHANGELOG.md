@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 - Reissue.finalize returns the version and value as an array
+- Documentation on the refined redo method in Gem::Version
+- Limit major numbers to Integers
 
 ## [0.1.2] - 2024-06-08
 

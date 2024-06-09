@@ -52,5 +52,25 @@ class TestVersionUpdater < Minitest::Spec
       contents = @version_updater.update("patch")
       assert_equal "2.32.gamma", contents
     end
+
+    it "works with pre-release versions" do
+      @file = File.expand_path("fixtures/prerelease_version.rb", __dir__)
+      @version_updater = Reissue::VersionUpdater.new(@file)
+      contents = @version_updater.update("pre")
+      assert_equal "3.2.1.rc2", contents
+    end
+
+    it "respects mixed version strings for patches" do
+      @file = File.expand_path("fixtures/mixed_version.rb", __dir__)
+      @version_updater = Reissue::VersionUpdater.new(@file)
+      contents = @version_updater.update("patch")
+      assert_equal "2.35.number20", contents
+    end
+
+    it "raises an error for an invalid segment" do
+      assert_raises(ArgumentError) do
+        @version_updater.update("invalid")
+      end
+    end
   end
 end

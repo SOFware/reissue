@@ -10,14 +10,28 @@ module Reissue
       # Redoes the version based on the specified segment_name.
       #
       # @param segment_name [Symbol] The segment_name to redo the version.
-      #   Possible values are :major, :minor, or any other symbol.
+      #   Possible values are :major, :minor, :patch, or :pre.
       # @return [Gem::Version] The updated version.
       def redo(segment_name)
-        ::Gem::Version.create({
-          major: [segments[0].next, 0, 0],
-          minor: [segments[0], segments[1].next, 0],
-          patch: [segments[0], segments[1], segments[2].next]
-        }.fetch(segment_name.to_sym).join("."))
+        new_segments = case segment_name.to_sym
+        when :major
+          [segments[0].next, 0, 0]
+        when :minor
+          [segments[0], segments[1].next, 0]
+        when :patch
+          segments.slice(0, 2) + segments.slice(2..-1).then { |array|
+            array[-1] = array[-1].next
+            [array.map(&:to_s).join]
+          }
+        when :pre
+          segments.slice(0, 3) + segments.slice(3..-1).then { |array|
+            array[-1] = array[-1].next
+            [array.map(&:to_s).join]
+          }
+        else
+          raise ArgumentError, "Invalid segment name: #{segment_name}"
+        end
+        ::Gem::Version.create(new_segments.join("."))
       end
     end
 
@@ -78,7 +92,8 @@ module Reissue
     # Regular expression pattern for matching the version string.
     #
     # @return [Regexp] The version regex pattern.
-    def version_regex = /(?<major>[a-zA-Z\d]+)\.(?<minor>[a-zA-Z\d]+)\.(?<patch>[a-zA-Z\d]+)/
+    VERSION_MATCH = /(?<major>\d+)\.(?<minor>[a-zA-Z\d]+)\.(?<patch>[a-zA-Z\d]+)(?<add>\.(?<pre>[a-zA-Z\d]+))?/
+    def version_regex = VERSION_MATCH
 
     # Writes the updated version to the specified file.
     #
