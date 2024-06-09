@@ -74,7 +74,11 @@ module Reissue
 
       desc "Reformat the changelog file to ensure it is correctly formatted."
       task "#{name}:reformat", [:version_limit] do |task, args|
-        version_limit = args[:version_limit].to_i || version_limit
+        version_limit = if args[:version_limit].nil?
+          self.version_limit
+        else
+          args[:version_limit].to_i
+        end
         Reissue.reformat(changelog_file, version_limit:)
       end
 

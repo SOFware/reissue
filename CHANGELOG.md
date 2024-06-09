@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 - Handle changlog files without an empty last line
+- Handle empty version_limit in reformat task
 
 ## [0.1.3] - 2024-06-09
 
