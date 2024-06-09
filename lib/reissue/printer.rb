@@ -1,5 +1,3 @@
-require "kramdown"
-
 module Reissue
   class Printer
     def initialize(changelog)
