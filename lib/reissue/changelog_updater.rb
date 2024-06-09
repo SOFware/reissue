@@ -17,8 +17,9 @@ module Reissue
     # @param date [String] The release date (default: "Unreleased").
     # @param changes [Hash] The changes for the version (default: {}).
     # @param changelog_file [String] The path to the changelog file (default: @changelog_file).
-    def call(version, date: "Unreleased", changes: {}, changelog_file: @changelog_file)
-      update(version, date: date, changes: changes)
+    # @param version_limit [Integer] The number of versions to keep (default: 2).
+    def call(version, date: "Unreleased", changes: {}, changelog_file: @changelog_file, version_limit: 2)
+      update(version, date:, changes:, version_limit:)
       write(changelog_file)
       changelog
     end
@@ -42,10 +43,13 @@ module Reissue
     # @param version [String] The version number.
     # @param date [String] The release date (default: "Unreleased").
     # @param changes [Hash] The changes for the version (default: {}).
-    def update(version, date: "Unreleased", changes: {})
+    # @param version_limit [Integer] The number of versions to keep (default: 2).
+    # @return [Hash] The updated changelog.
+    def update(version, date: "Unreleased", changes: {}, version_limit: 2)
       @changelog = Parser.parse(File.read(@changelog_file))
 
       changelog["versions"].unshift({"version" => version, "date" => date, "changes" => changes})
+      changelog["versions"] = changelog["versions"].first(version_limit)
       changelog
     end
 
@@ -53,8 +57,9 @@ module Reissue
     #
     # @param changelog_file [String] The path to the changelog file (default: @changelog_file).
     # @return [Hash] The parsed changelog.
-    def reformat(result_file = @changelog_file)
+    def reformat(result_file = @changelog_file, version_limit: 2)
       @changelog = Parser.parse(File.read(@changelog_file))
+      changelog["versions"] = changelog["versions"].first(version_limit)
       write(result_file)
       changelog
     end

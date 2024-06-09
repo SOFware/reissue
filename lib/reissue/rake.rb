@@ -28,8 +28,14 @@ module Reissue
     # Additional paths to add to the commit.
     attr_accessor :updated_paths
 
+    # The number of versions to retain in the changelog file. Defaults to 2.
+    attr_accessor :version_limit
+
     # Whether to commit the changes. Default: true.
     attr_accessor :commit
+
+    # Whether to commit the finalize change to the changelog. Default: true.
+    attr_accessor :commit_finalize
 
     def initialize(name = :reissue)
       @name = name
@@ -38,6 +44,8 @@ module Reissue
       @updated_paths = []
       @changelog_file = "CHANGELOG.md"
       @commit = true
+      @commit_finalize = true
+      @version_limit = 2
     end
 
     def define
@@ -65,14 +73,19 @@ module Reissue
       end
 
       desc "Reformat the changelog file to ensure it is correctly formatted."
-      task "#{name}:reformat" do |task|
-        Reissue.reformat(changelog_file)
+      task "#{name}:reformat", [:version_limit] do |task, args|
+        version_limit = args[:version_limit].to_i || version_limit
+        Reissue.reformat(changelog_file, version_limit:)
       end
 
       desc "Finalize the changelog for an unreleased version to set the release date."
       task "#{name}:finalize", [:date] do |task, args|
         date = args[:date] || Time.now.strftime("%Y-%m-%d")
         Reissue.finalize(date, changelog_file:)
+        if commit_finalize
+          system("git add -u")
+          system("git commit -m 'Finalize the changelog for version '")
+        end
       end
     end
   end

@@ -9,18 +9,26 @@ module Reissue
   # Updates the version number and changelog.
   #
   # @param version_file [String] The path to the version file.
-  # @param changelog_file [String] The path to the changelog file.
-  # @param segment [String] The segment of the version number to update.
-  # @param date [String] The release date.
-  # @param changes [Hash] The changes made in this release.
+  # @param changelog_file [String] The path to the changelog file. Default: CHANGELOG.md
+  # @param segment [String] The segment of the version number to update. Default: patch
+  # @param date [String] The release date. Default: Unreleased
+  # @param changes [Hash] The changes made in this release. Default: {}
+  # @param version_limit [Integer] The number of versions to retain in the changes. Default: 2
   #
   # @return [String] The new version number.
-  def self.call(version_file:, changelog_file: "CHANGELOG.md", segment: "patch", date: "Unreleased", changes: {})
+  def self.call(
+    version_file:,
+    changelog_file: "CHANGELOG.md",
+    segment: "patch",
+    date: "Unreleased",
+    changes: {},
+    version_limit: 2
+  )
     version_updater = VersionUpdater.new(version_file)
     new_version = version_updater.call(segment, version_file:)
     if changelog_file
       changelog_updater = ChangelogUpdater.new(changelog_file)
-      changelog_updater.call(new_version, date:, changes:, changelog_file:)
+      changelog_updater.call(new_version, date:, changes:, changelog_file:, version_limit:)
     end
     new_version
   end
@@ -40,8 +48,9 @@ module Reissue
   # Reformats the changelog file to ensure it is correctly formatted.
   #
   # @param file [String] The path to the changelog file.
-  def self.reformat(file)
+  # @param version_limit [Integer] The number of versions to retain in the changelog. Default: 2
+  def self.reformat(file, version_limit: 2)
     changelog_updater = ChangelogUpdater.new(file)
-    changelog_updater.reformat
+    changelog_updater.reformat(version_limit:)
   end
 end

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Reissue::Printer class to print the changelog file
 - Reissue::Task class to handle the creation of reissue tasks
 - Return version and date from Reissue.finalize
+- Ability to limit the number of versions to maintain
 
 ### Fixed:
 

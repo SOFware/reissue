@@ -63,7 +63,7 @@ class TestReissue < Minitest::Spec
     end
 
     it "removes excess whitespace and inserts it where necessary" do
-      @changelog_updater.reformat(@tempfile)
+      @changelog_updater.reformat(@tempfile, version_limit: 3)
       result = File.read(@tempfile)
       assert_equal(<<~FIXED, result)
         # Change Log

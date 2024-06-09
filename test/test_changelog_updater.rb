@@ -30,6 +30,14 @@ class TestChangelogUpdater < Minitest::Spec
       contents = @changelog_updater.to_s
       assert_match(/#{Date.today}/, contents)
     end
+
+    it "limits the number of versions to keep" do
+      @changelog_updater.call("1.0.0", changelog_file: @tempfile.path, version_limit: 1)
+      @changelog_updater.call("1.1.0", changelog_file: @tempfile.path, version_limit: 1)
+      contents = @changelog_updater.to_s
+      assert_match(/\[1.1\.0\]/, contents)
+      refute_match(/\[1.0\.0\]/, contents)
+    end
   end
 
   describe "update" do
