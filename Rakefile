@@ -15,7 +15,6 @@ task default: :test
 require_relative "lib/reissue/gem"
 
 Reissue::Task.create :reissue do |task|
-  task.updated_paths << "checksums"
   task.version_file = "lib/reissue/version.rb"
   task.commit = true
 end
