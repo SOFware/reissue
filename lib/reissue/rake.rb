@@ -81,10 +81,13 @@ module Reissue
       desc "Finalize the changelog for an unreleased version to set the release date."
       task "#{name}:finalize", [:date] do |task, args|
         date = args[:date] || Time.now.strftime("%Y-%m-%d")
-        Reissue.finalize(date, changelog_file:)
+        version, date = Reissue.finalize(date, changelog_file:)
+        finalize_message = "Finalize the changelog for version #{version} on #{date}"
         if commit_finalize
           system("git add -u")
-          system("git commit -m 'Finalize the changelog for version '")
+          system("git commit -m '#{finalize_message}'")
+        else
+          system("echo '#{finalize_message}'")
         end
       end
     end

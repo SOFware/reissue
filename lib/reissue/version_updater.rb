@@ -53,8 +53,8 @@ module Reissue
     def update(segment)
       version_file = File.read(@version_file)
       @updated_body = version_file.gsub(version_regex) do |string|
-        @original_version = Gem::Version.new(string)
-        @new_version = Gem::Version.new(string).redo(segment).to_s
+        @original_version = ::Gem::Version.new(string)
+        @new_version = ::Gem::Version.new(string).redo(segment).to_s
       end
       @new_version
     end
