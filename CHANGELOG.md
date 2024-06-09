@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Return version and date from Reissue.finalize
 - Ability to limit the number of versions to maintain
 - Gem release support
+- Description of how to use and configure the gem in the README.md
 
 ### Fixed:
 

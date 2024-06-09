@@ -24,10 +24,75 @@ If bundler is not being used to manage dependencies, install the gem by executin
 
 ## Usage
 
-Build your own release with rake tasks provided by the gem. The following tasks are available:
+If you are working with a gem, you can add the following to the Rakefile:
 
-- `rake reissue[segment]` - Prepare a new version for future work for the given version segment.
-- `rake reissue:finalize` - Update the CHANGELOG.md file with a date for the latest version.
+```ruby
+require "reissue/gem"
+
+Reissue::Task.create :reissue do |task|
+  # Required: The file to update with the new version number.
+  task.version_file = "lib/my_gem/version.rb"
+end
+```
+
+This will add the following rake tasks:
+
+- `rake reissue[segment]` - Prepare a new version for future work for the given
+  version segment.
+- `rake reissue:finalize[date]` - Update the CHANGELOG.md file with a date for
+  the latest version.
+- `rake reissue:reformat[version_limit]` - Reformat the CHANGELOG.md file and
+  optionally limit the number of versions to maintain.
+
+This will also update the `build` task from rubygems to first run
+`reissue:finalize` and then build the gem, ensuring that your changelog is
+up-to-date before the gem is built.
+
+It updates the `release` task from rubygems to run `reissue` after the gem is
+pushed to rubygems.
+
+Build your own release with rake tasks provided by the gem.
+
+Add the following to the Rakefile:
+
+```ruby
+require "reissue/rake"
+
+Reissue::Task.create :reissue do |task|
+  # Required: The file to update with the new version number.
+  task.version_file = "path/to/version.rb"
+end
+```
+
+When creating your task, you have additional options to customize the behavior:
+
+```ruby
+require "reissue/rake"
+
+Reissue::Task.create :your_name_and_namespace do |task|
+
+  # Required: The file to update with the new version number.
+  task.version_file = "path/to/version.rb"
+
+  # Optional: The name of the task. Defaults to "reissue".
+  task.name = "your_name_and_namespace"
+
+  # Optional: The description of the task.
+  task.description = "Prepare the next version of the gem."
+
+  # Optional: The file to update with the new version number.
+  task.changelog_file = "path/to/CHANGELOG.md"
+
+  # Optional: The number of versions to maintain in the changelog.
+  task.version_limit = 5
+
+  # Optional: Whether to commit the changes automatically. Defaults to true.
+  task.commit = false
+
+  # Optional: Whether or not to commit the results of the finalize task. Defaults to true.
+  task.finalize_commit = false
+end
+```
 
 ## Development
 
