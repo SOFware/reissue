@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support for alhpa characters in version numbers
 - Support for English names for Greek alphabet letters in version numbers
 
+### Fixed
+
+- Reissue.finalize returns the version and value as an array
+
 ## [0.1.2] - 2024-06-08
 
 ### Fixed:

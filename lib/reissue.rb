@@ -42,7 +42,7 @@ module Reissue
   def self.finalize(date = Date.today, changelog_file: "CHANGELOG.md")
     changelog_updater = ChangelogUpdater.new(changelog_file)
     changelog = changelog_updater.finalize(date:, changelog_file:)
-    changelog["versions"].first.slice("version", "date")
+    changelog["versions"].first.slice("version", "date").values
   end
 
   # Reformats the changelog file to ensure it is correctly formatted.

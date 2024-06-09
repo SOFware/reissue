@@ -53,6 +53,18 @@ class TestReissue < Minitest::Spec
 
       assert_match(/\[0.1.2\] - 2021-01-01/, contents)
     end
+
+    it "returns the version number and release date" do
+      fixture_changelog = File.expand_path("fixtures/changelog.md", __dir__)
+      changelog_file = Tempfile.new
+      changelog_file << File.read(fixture_changelog)
+      changelog_file.close
+
+      version, date = Reissue.finalize("2021-01-01", changelog_file: changelog_file.path)
+
+      assert_equal("0.1.2", version)
+      assert_equal("2021-01-01", date)
+    end
   end
 
   describe ".reformat" do
