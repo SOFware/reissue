@@ -25,7 +25,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - dependency on the keepachangelog gem
 
-
 ## [0.1.0] - 2024-04-11
 
 ### Added:

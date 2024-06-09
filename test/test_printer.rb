@@ -35,7 +35,6 @@ class TestPrinter < Minitest::Spec
         ### Added
 
         - New feature
-
       MARKDOWN
     end
   end
