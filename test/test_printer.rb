@@ -37,5 +37,19 @@ class TestPrinter < Minitest::Spec
         - New feature
       MARKDOWN
     end
+
+    it "handles empty changelogs" do
+      changelog = {
+        "versions" => []
+      }
+      printer = Reissue::Printer.new(changelog)
+      assert_equal(<<~MARKDOWN, printer.to_s)
+        # Changelog
+
+        All project changes are documented in this file.
+
+        ## [0.0.0] - Unreleased
+      MARKDOWN
+    end
   end
 end

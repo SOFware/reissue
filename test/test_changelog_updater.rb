@@ -38,6 +38,13 @@ class TestChangelogUpdater < Minitest::Spec
       assert_match(/\[1.1\.0\]/, contents)
       refute_match(/\[1.0\.0\]/, contents)
     end
+
+    it "handles empty changelog files" do
+      @changelog_updater = Reissue::ChangelogUpdater.new(@tempfile.path)
+      @changelog_updater.call("1.0.0", changelog_file: @tempfile.path)
+      contents = @changelog_updater.to_s
+      assert_match(/\[1.0\.0\]/, contents)
+    end
   end
 
   describe "update" do

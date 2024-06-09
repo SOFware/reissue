@@ -30,14 +30,14 @@ module Reissue
 
     def parse_title(scanner)
       scanner.scan(/# ([\w\s]+)$/)
-      title = scanner[1].strip
+      title = scanner[1].to_s.strip
       {"title" => title}
     end
 
     def parse_preamble(scanner)
       preamble = scanner.scan_until(VERSION_MATCH)
-      preamble = preamble.gsub(VERSION_BREAK, "").strip
-      scanner.unscan
+      preamble = preamble.to_s.gsub(VERSION_BREAK, "").strip
+      scanner.unscan unless preamble.empty?
       {"preamble" => preamble.strip}
     end
 
