@@ -12,7 +12,7 @@ end
 
 task default: :test
 
-require_relative "lib/reissue/rake"
+require_relative "lib/reissue/gem"
 
 Reissue::Task.create :reissue do |task|
   task.updated_paths << "checksums"
