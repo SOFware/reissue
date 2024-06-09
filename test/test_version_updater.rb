@@ -38,5 +38,19 @@ class TestVersionUpdater < Minitest::Spec
       contents = @version_updater.update("patch")
       assert_equal "0.1.1", contents
     end
+
+    it "works with letters in the version string" do
+      @file = File.expand_path("fixtures/alpha_version.rb", __dir__)
+      @version_updater = Reissue::VersionUpdater.new(@file)
+      contents = @version_updater.update("patch")
+      assert_equal "0.1.C", contents
+    end
+
+    it "works with greek alphabet names" do
+      @file = File.expand_path("fixtures/greek_version.rb", __dir__)
+      @version_updater = Reissue::VersionUpdater.new(@file)
+      contents = @version_updater.update("patch")
+      assert_equal "2.32.gamma", contents
+    end
   end
 end

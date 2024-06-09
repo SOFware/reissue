@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.1.3] - Unreleased
 
+### Added
+
+- Support for alhpa characters in version numbers
+- Support for English names for Greek alphabet letters in version numbers
+
 ## [0.1.2] - 2024-06-08
 
 ### Fixed:

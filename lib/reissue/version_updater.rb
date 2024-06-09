@@ -1,4 +1,8 @@
 module Reissue
+  module_function def greeks
+    %w[alpha beta gamma delta epsilon zeta eta theta kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega]
+  end
+
   # Provides versioning functionality for the application.
   module Versioning
     # Provides versioning functionality for the application.
@@ -9,12 +13,24 @@ module Reissue
       #   Possible values are :major, :minor, or any other symbol.
       # @return [Gem::Version] The updated version.
       def redo(segment_name)
-        if segment_name.to_s == "major"
-          ::Gem::Version.new("#{segments[0].to_i + 1}.0.0")
-        elsif segment_name.to_s == "minor"
-          ::Gem::Version.new("#{segments[0]}.#{segments[1].to_i + 1}.0")
+        ::Gem::Version.create({
+          major: [segments[0].next, 0, 0],
+          minor: [segments[0], segments[1].next, 0],
+          patch: [segments[0], segments[1], segments[2].next]
+        }.fetch(segment_name.to_sym).join("."))
+      end
+    end
+
+    refine ::String do
+      def greek?
+        Reissue.greeks.include?(downcase)
+      end
+
+      def next
+        if greek?
+          Reissue.greeks[Reissue.greeks.index(downcase).next]
         else
-          ::Gem::Version.new("#{segments[0]}.#{segments[1]}.#{segments[2].to_i + 1}")
+          succ
         end
       end
     end
@@ -62,7 +78,7 @@ module Reissue
     # Regular expression pattern for matching the version string.
     #
     # @return [Regexp] The version regex pattern.
-    def version_regex = /(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/
+    def version_regex = /(?<major>[a-zA-Z\d]+)\.(?<minor>[a-zA-Z\d]+)\.(?<patch>[a-zA-Z\d]+)/
 
     # Writes the updated version to the specified file.
     #
