@@ -15,6 +15,16 @@ class TestVersionUpdater < Minitest::Spec
       contents = File.read(@tempfile.path)
       assert_match(/1.0.0/, contents)
     end
+
+    it "works with an alternative version_redo_proc" do
+      @version_updater.version_redo_proc = proc do |version, segment|
+        Array.new(3) { rand(1..10) }.join(".")
+      end
+
+      @version_updater.call("major", version_file: @tempfile.path)
+      contents = File.read(@tempfile.path)
+      refute_match(/1.0.0/, contents)
+    end
   end
 
   describe "update" do

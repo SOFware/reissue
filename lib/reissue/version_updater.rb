@@ -56,11 +56,12 @@ module Reissue
     # Initializes a new instance of the VersionUpdater class.
     #
     # @param version_file [String] The path to the version file.
-    def initialize(version_file)
+    def initialize(version_file, version_redo_proc: nil)
       @version_file = version_file
       @original_version = nil
       @new_version = nil
       @updated_body = ""
+      @version_redo_proc = version_redo_proc
     end
 
     # Updates the version segment and writes the updated version to the file.
@@ -76,6 +77,18 @@ module Reissue
       @new_version
     end
 
+    # A proc that can be used to redo the version string.
+    attr_accessor :version_redo_proc
+
+    # Creates a new version string based on the original version and the specified segment.
+    def redo(version, segment)
+      if version_redo_proc
+        version_redo_proc.call(version, segment)
+      else
+        version.redo(segment)
+      end
+    end
+
     # Updates the specified segment of the version string.
     #
     # @param segment [Symbol] The segment to update (:major, :minor, or :patch).
@@ -84,7 +97,7 @@ module Reissue
       version_file = File.read(@version_file)
       @updated_body = version_file.gsub(version_regex) do |string|
         @original_version = ::Gem::Version.new(string)
-        @new_version = ::Gem::Version.new(string).redo(segment).to_s
+        @new_version = self.redo(::Gem::Version.new(string), segment).to_s
       end
       @new_version
     end

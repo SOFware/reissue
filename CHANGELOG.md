@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.1.6] - Unreleased
 
+### Added
+
+- The ability to specify the version_redo_proc to customize the version number
+  update process.
+
 ### Fixed
 
 - Incorrect testing of Reissue.reformat

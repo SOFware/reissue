@@ -22,9 +22,10 @@ module Reissue
     segment: "patch",
     date: "Unreleased",
     changes: {},
-    version_limit: 2
+    version_limit: 2,
+    version_redo_proc: nil
   )
-    version_updater = VersionUpdater.new(version_file)
+    version_updater = VersionUpdater.new(version_file, version_redo_proc:)
     new_version = version_updater.call(segment, version_file:)
     if changelog_file
       changelog_updater = ChangelogUpdater.new(changelog_file)

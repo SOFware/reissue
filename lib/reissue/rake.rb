@@ -22,14 +22,17 @@ module Reissue
     # The path to the version file. Required.
     attr_accessor :version_file
 
+    # The number of versions to retain in the changelog file. Defaults to 2.
+    attr_accessor :version_limit
+
+    # A proc that can be used to create the new version string.
+    attr_accessor :version_redo_proc
+
     # The path to the changelog file.
     attr_accessor :changelog_file
 
     # Additional paths to add to the commit.
     attr_accessor :updated_paths
-
-    # The number of versions to retain in the changelog file. Defaults to 2.
-    attr_accessor :version_limit
 
     # Whether to commit the changes. Default: true.
     attr_accessor :commit
