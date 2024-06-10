@@ -93,7 +93,7 @@ Reissue::Task.create :your_name_and_namespace do |task|
   task.version_limit = 5
 
   # Optional: A Proc to format the version number. Receives a Gem::Version object, and segment.
-  task.format_version = ->(version, segment) do
+  task.version_redo_proc = ->(version, segment) do
     # your special versioning logic
   end
 
