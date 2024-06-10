@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.1.7] - Unreleased
 
+### Fixed
+
+- Pass the version_redo_proc to the Reissue.call in the reissue task.
+
 ## [0.1.6] - 2024-06-10
 
 ### Added

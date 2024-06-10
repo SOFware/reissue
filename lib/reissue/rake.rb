@@ -49,13 +49,14 @@ module Reissue
       @commit = true
       @commit_finalize = true
       @version_limit = 2
+      @version_redo_proc = nil
     end
 
     def define
       desc description
       task name, [:segment] do |task, args|
         segment = args[:segment] || "patch"
-        new_version = Reissue.call(segment:, version_file:, version_limit:)
+        new_version = Reissue.call(segment:, version_file:, version_limit:, version_redo_proc:)
         if defined?(Bundler)
           Bundler.with_unbundled_env do
             system("bundle install")
