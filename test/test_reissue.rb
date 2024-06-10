@@ -68,15 +68,13 @@ class TestReissue < Minitest::Spec
   end
 
   describe ".reformat" do
-    before do
-      @file = File.expand_path("fixtures/changelog.md", __dir__)
-      @tempfile = Tempfile.new
-      @changelog_updater = Reissue::ChangelogUpdater.new(@file)
-    end
-
     it "removes excess whitespace and inserts it where necessary" do
-      @changelog_updater.reformat(@tempfile, version_limit: 3)
-      result = File.read(@tempfile)
+      fixture_changelog = File.expand_path("fixtures/changelog.md", __dir__)
+      changelog_file = Tempfile.new
+      changelog_file << File.read(fixture_changelog)
+      changelog_file.close
+      Reissue.reformat(changelog_file.path, version_limit: 3)
+      result = File.read(changelog_file)
       assert_equal(<<~FIXED, result)
         # Change Log
 

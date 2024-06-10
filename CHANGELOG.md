@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.1.6] - Unreleased
 
+### Fixed
+
+- Incorrect testing of Reissue.reformat
+
 ## [0.1.5] - 2024-06-09
 
 ### Fixed
