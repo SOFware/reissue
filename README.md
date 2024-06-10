@@ -80,26 +80,31 @@ require "reissue/rake"
 
 Reissue::Task.create :your_name_and_namespace do |task|
 
-  # Required: The file to update with the new version number.
-  task.version_file = "path/to/version.rb"
-
   # Optional: The name of the task. Defaults to "reissue".
   task.name = "your_name_and_namespace"
 
-  # Optional: The description of the task.
+  # Optional: The description of the main task.
   task.description = "Prepare the next version of the gem."
 
-  # Optional: The file to update with the new version number.
-  task.changelog_file = "path/to/CHANGELOG.md"
+  # Required: The file to update with the new version number.
+  task.version_file = "path/to/version.rb"
 
   # Optional: The number of versions to maintain in the changelog.
   task.version_limit = 5
+
+  # Optional: A Proc to format the version number. Receives a Gem::Version object, and segment.
+  task.format_version = ->(version, segment) do
+    # your special versioning logic
+  end
+
+  # Optional: The file to update with the new version number.
+  task.changelog_file = "path/to/CHANGELOG.md"
 
   # Optional: Whether to commit the changes automatically. Defaults to true.
   task.commit = false
 
   # Optional: Whether or not to commit the results of the finalize task. Defaults to true.
-  task.finalize_commit = false
+  task.commit_finalize = false
 end
 ```
 
