@@ -89,7 +89,7 @@ Reissue::Task.create :your_name_and_namespace do |task|
   # Required: The file to update with the new version number.
   task.version_file = "path/to/version.rb"
 
-  # Optional: The number of versions to maintain in the changelog.
+  # Optional: The number of versions to maintain in the changelog. Defaults to 2.
   task.version_limit = 5
 
   # Optional: A Proc to format the version number. Receives a Gem::Version object, and segment.
@@ -97,7 +97,7 @@ Reissue::Task.create :your_name_and_namespace do |task|
     # your special versioning logic
   end
 
-  # Optional: The file to update with the new version number.
+  # Optional: The file to update with the new version number. Defaults to "CHANGELOG.md".
   task.changelog_file = "path/to/CHANGELOG.md"
 
   # Optional: Whether to commit the changes automatically. Defaults to true.

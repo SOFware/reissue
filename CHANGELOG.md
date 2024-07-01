@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.1.8] - Unreleased
 
+### Changed
+
+- Update the README.md to specify the default values for some configuration.
+
 ## [0.1.7] - 2024-06-10
 
 ### Fixed
