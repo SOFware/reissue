@@ -73,6 +73,7 @@ class TestReissue < Minitest::Spec
       changelog_file = Tempfile.new
       changelog_file << File.read(fixture_changelog)
       changelog_file.close
+
       Reissue.reformat(changelog_file.path, version_limit: 3)
       result = File.read(changelog_file)
       assert_equal(<<~FIXED, result)
