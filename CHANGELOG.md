@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Reissue::Parser implementation
 
+### Fixed
+
+- Handle multiline changes
+
 ## [0.1.8] - Unreleased
 
 ### Changed

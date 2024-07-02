@@ -107,7 +107,7 @@ module Reissue
       def to_h
         parse
         {
-          @type => @changes
+          @type => @changes.map { |change| change.split("\n").map(&:strip).join("\n  ") }
         }
       end
     end

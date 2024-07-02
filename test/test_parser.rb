@@ -48,7 +48,7 @@ class TestParser < Minitest::Spec
 
       assert_equal(
         {
-          "Added" => ["New feature", "More things"],
+          "Added" => ["New feature", "More things\n  with extra lines"],
           "Fixed" => ["Bug fix"]
         },
         changes.dig("versions", 1, "changes")

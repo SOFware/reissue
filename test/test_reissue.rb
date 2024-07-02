@@ -92,6 +92,7 @@ class TestReissue < Minitest::Spec
 
         - New feature
         - More things
+          with extra lines
 
         ### Fixed
 
