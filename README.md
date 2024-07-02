@@ -112,6 +112,15 @@ end
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
+## Releasing
+
+Run `rake build:checksum` to build the gem and generate the checksum. This will also update the version number in the gemspec file.
+
+Run `rake release` to create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+
+This will leave a new commit with the version number incremented in the version file and the changelog updated with the new version.
+Push the changes to the repository.
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/SOFware/reissue.
