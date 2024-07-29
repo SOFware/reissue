@@ -74,6 +74,8 @@ module Reissue
         else
           system("echo '#{bump_message}'")
         end
+
+        new_version
       end
 
       desc "Reformat the changelog file to ensure it is correctly formatted."
