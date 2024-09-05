@@ -32,7 +32,11 @@ module Reissue
     attr_accessor :changelog_file
 
     # Additional paths to add to the commit.
-    attr_accessor :updated_paths
+    attr_writer :updated_paths
+
+    def updated_paths
+      Array(@updated_paths)
+    end
 
     # Whether to commit the changes. Default: true.
     attr_accessor :commit

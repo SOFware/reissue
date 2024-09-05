@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 - Require the 'date' library in tests to ensure the Date constant is present
+- Ensure that `updated_paths` are always enumerable
 
 ## [0.2.1] - 2024-07-29
 
