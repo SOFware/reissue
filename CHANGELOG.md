@@ -7,4 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.3.0] - Unreleased
 
+### Added
+
+- Add `push_reissue` option to control pushing changes to the remote repository.
+
+### Changed
+
+- Default behavior of _this_ gem's release is to push finalize without a branch.
+
 ## [0.2.3] - Unreleased
