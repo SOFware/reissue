@@ -125,7 +125,7 @@ module Reissue
       end
 
       desc "Create a new branch for the next version."
-      task "#{name}:branch" => [:branch] do |task, args|
+      task "#{name}:branch", [:branch] do |task, args|
         raise "No branch name specified" unless args[:branch]
         system("git checkout -b #{args[:branch]}")
       end
