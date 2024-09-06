@@ -28,7 +28,7 @@ module Reissue
         changes_string = changes.map do |section, section_changes|
           format_section(section, section_changes)
         end.join("\n\n")
-        [version_string, changes_string].filter_map { |str| str unless str.empty? }.join("\n\n")
+        [version_string, changes_string].reject { |str| str.empty? }.join("\n\n")
       end.then do |data|
         if data.empty?
           "## [0.0.0] - Unreleased"
