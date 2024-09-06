@@ -52,6 +52,14 @@ module Reissue
     # Set this to :branch to push to a new branch.
     attr_accessor :push_finalize
 
+    # Whether to push the changes when a new version is created. Default: :branch.
+    # Requires commit to be true.
+    #
+    # Set this to false to disable pushing.
+    # Set this to true to push to the current branch.
+    # Set this to :branch to push to a new branch.
+    attr_accessor :push_reissue
+
     def initialize(name = :reissue)
       @name = name
       @description = "Prepare the code for work on a new version."
@@ -63,6 +71,7 @@ module Reissue
       @push_finalize = false
       @version_limit = 2
       @version_redo_proc = nil
+      @push_reissue = :branch
     end
 
     def finalize_with_branch?
@@ -71,6 +80,14 @@ module Reissue
 
     def push_finalize?
       !!push_finalize
+    end
+
+    def reissue_version_with_branch?
+      push_reissue == :branch
+    end
+
+    def push_reissue?
+      !!push_reissue
     end
 
     def define
@@ -91,7 +108,11 @@ module Reissue
 
         bump_message = "Bump version to #{new_version}"
         if commit
+          if reissue_version_with_branch?
+            Rake::Task["#{name}:branch"].invoke("reissue/#{new_version}")
+          end
           system("git commit -m '#{bump_message}'")
+          Rake::Task["#{name}:push"].invoke if push_reissue?
         else
           system("echo '#{bump_message}'")
         end
