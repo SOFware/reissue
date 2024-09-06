@@ -110,7 +110,7 @@ Reissue::Task.create :your_name_and_namespace do |task|
   # Optional: Whether or not to commit the results of the finalize task. Defaults to true.
   task.commit_finalize = false
 
-  # Optional: Whether to push the changes automatically. Defaults to :branch.
+  # Optional: Whether to push the changes automatically. Defaults to false.
   task.push_finalize = :branch # or false, or true to push the working branch
 end
 ```
