@@ -16,5 +16,5 @@ require_relative "lib/reissue/gem"
 
 Reissue::Task.create :reissue do |task|
   task.version_file = "lib/reissue/version.rb"
-  task.commit = true
+  task.push_finalize = :branch
 end
