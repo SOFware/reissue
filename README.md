@@ -52,6 +52,10 @@ This will add the following rake tasks:
   the latest version.
 - `rake reissue:reformat[version_limit]` - Reformat the CHANGELOG.md file and
   optionally limit the number of versions to maintain.
+- `rake reissue:branch[branch-name]` - Create a new branch for the next version.
+  Controlled by the `push_finalize` and `commit_finalize` options.
+- `rake reissue:push` - Push the changes to the remote repository. Controlled
+  by the `push_finalize` and `commit_finalize` options.
 
 This will also update the `build` task from rubygems to first run
 `reissue:finalize` and then build the gem, ensuring that your changelog is
@@ -105,6 +109,9 @@ Reissue::Task.create :your_name_and_namespace do |task|
 
   # Optional: Whether or not to commit the results of the finalize task. Defaults to true.
   task.commit_finalize = false
+
+  # Optional: Whether to push the changes automatically. Defaults to :branch.
+  task.push_finalize = :branch # or false, or true to push the working branch
 end
 ```
 

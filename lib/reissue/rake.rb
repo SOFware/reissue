@@ -44,6 +44,14 @@ module Reissue
     # Whether to commit the finalize change to the changelog. Default: true.
     attr_accessor :commit_finalize
 
+    # Whether to branch and push the changes. Default: :branch.
+    # Requires commit_finialize to be true.
+    #
+    # Set this to false to disable pushing.
+    # Set this to true to push to the current branch.
+    # Set this to :branch to push to a new branch.
+    attr_accessor :push_finalize
+
     def initialize(name = :reissue)
       @name = name
       @description = "Prepare the code for work on a new version."
@@ -52,8 +60,17 @@ module Reissue
       @changelog_file = "CHANGELOG.md"
       @commit = true
       @commit_finalize = true
+      @push_finalize = false
       @version_limit = 2
       @version_redo_proc = nil
+    end
+
+    def finalize_with_branch?
+      push_finalize == :branch
+    end
+
+    def push_finalize?
+      !!push_finalize
     end
 
     def define
@@ -98,11 +115,24 @@ module Reissue
         version, date = Reissue.finalize(date, changelog_file:)
         finalize_message = "Finalize the changelog for version #{version} on #{date}"
         if commit_finalize
+          Rake::Task["#{name}:branch"].invoke("reissue/#{version}") if finalize_with_branch?
           system("git add -u")
           system("git commit -m '#{finalize_message}'")
+          Rake::Task["#{name}:push"].invoke if push_finalize?
         else
           system("echo '#{finalize_message}'")
         end
+      end
+
+      desc "Create a new branch for the next version."
+      task "#{name}:branch" => [:branch] do |task, args|
+        raise "No branch name specified" unless args[:branch]
+        system("git checkout -b #{args[:branch]}")
+      end
+
+      desc "Push the current branch to the remote repository."
+      task "#{name}:push" do
+        system("git push origin HEAD")
       end
     end
   end
