@@ -60,8 +60,10 @@ module Reissue
     # Set this to :branch to push to a new branch.
     attr_accessor :push_reissue
 
-    def initialize(name = :reissue)
+    def initialize(name = :reissue, formatter: Reissue, tasker: Rake::Task)
       @name = name
+      @formatter = formatter
+      @tasker = tasker
       @description = "Prepare the code for work on a new version."
       @version_file = nil
       @updated_paths = []
@@ -73,6 +75,9 @@ module Reissue
       @version_redo_proc = nil
       @push_reissue = :branch
     end
+
+    attr_reader :formatter, :tasker
+    private :formatter, :tasker
 
     def finalize_with_branch?
       push_finalize == :branch
@@ -94,7 +99,7 @@ module Reissue
       desc description
       task name, [:segment] do |task, args|
         segment = args[:segment] || "patch"
-        new_version = Reissue.call(segment:, version_file:, version_limit:, version_redo_proc:)
+        new_version = formatter.call(segment:, version_file:, version_limit:, version_redo_proc:)
         if defined?(Bundler)
           Bundler.with_unbundled_env do
             system("bundle install")
@@ -102,17 +107,17 @@ module Reissue
         end
 
         system("git add -u")
-        if updated_paths.any?
+        if updated_paths&.any?
           system("git add #{updated_paths.join(" ")}")
         end
 
         bump_message = "Bump version to #{new_version}"
         if commit
           if reissue_version_with_branch?
-            Rake::Task["#{name}:branch"].invoke("reissue/#{new_version}")
+            tasker["#{name}:branch"].invoke("reissue/#{new_version}")
           end
           system("git commit -m '#{bump_message}'")
-          Rake::Task["#{name}:push"].invoke if push_reissue?
+          tasker["#{name}:push"].invoke if push_reissue?
         else
           system("echo '#{bump_message}'")
         end
@@ -127,19 +132,19 @@ module Reissue
         else
           args[:version_limit].to_i
         end
-        Reissue.reformat(changelog_file, version_limit:)
+        formatter.reformat(changelog_file, version_limit:)
       end
 
       desc "Finalize the changelog for an unreleased version to set the release date."
       task "#{name}:finalize", [:date] do |task, args|
         date = args[:date] || Time.now.strftime("%Y-%m-%d")
-        version, date = Reissue.finalize(date, changelog_file:)
+        version, date = formatter.finalize(date, changelog_file:)
         finalize_message = "Finalize the changelog for version #{version} on #{date}"
         if commit_finalize
-          Rake::Task["#{name}:branch"].invoke("reissue/#{version}") if finalize_with_branch?
+          tasker["#{name}:branch"].invoke("reissue/#{version}") if finalize_with_branch?
           system("git add -u")
           system("git commit -m '#{finalize_message}'")
-          Rake::Task["#{name}:push"].invoke if push_finalize?
+          tasker["#{name}:push"].invoke if push_finalize?
         else
           system("echo '#{finalize_message}'")
         end

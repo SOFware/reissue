@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Set the name of the `reissue:branch` argument to `branch_name` to be clearer.
+- Inject the constants in the `create` method.
 
 ## [0.3.0] - 2024-09-06
 
