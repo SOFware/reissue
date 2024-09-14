@@ -95,16 +95,20 @@ module Reissue
       !!push_reissue
     end
 
+    def bundle
+      if defined?(Bundler)
+        Bundler.with_unbundled_env do
+          system("bundle install")
+        end
+      end
+    end
+
     def define
       desc description
       task name, [:segment] do |task, args|
         segment = args[:segment] || "patch"
         new_version = formatter.call(segment:, version_file:, version_limit:, version_redo_proc:)
-        if defined?(Bundler)
-          Bundler.with_unbundled_env do
-            system("bundle install")
-          end
-        end
+        bundle
 
         system("git add -u")
         if updated_paths&.any?
