@@ -104,6 +104,16 @@ Reissue::Task.create :your_name_and_namespace do |task|
   # Optional: The file to update with the new version number. Defaults to "CHANGELOG.md".
   task.changelog_file = "path/to/CHANGELOG.md"
 
+  # Optional: A Boolean, String, or Proc to retain the changelog files for the previous versions. Defaults to false.
+  # Setting to true will retain the changelog files in the "changelogs" directory.
+  # Setting to a String will use that path as the directory to retain the changelog files.
+  # The Proc receives a version hash and the changelog content.
+  task.retain_changelogs = ->(version, content) do
+    # your special retention logic
+  end
+  # or task.retain_changelogs = "path/to/changelogs"
+  # or task.retain_changelogs = true
+
   # Optional: Whether to commit the changes automatically. Defaults to true.
   task.commit = false
 
