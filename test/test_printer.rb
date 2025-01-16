@@ -51,5 +51,17 @@ class TestPrinter < Minitest::Spec
         ## [0.0.0] - Unreleased
       MARKDOWN
     end
+
+    it "handles nil versions" do
+      changelog = {}
+      printer = Reissue::Printer.new(changelog)
+      assert_equal(<<~MARKDOWN, printer.to_s)
+        # Changelog
+
+        All project changes are documented in this file.
+
+        ## [0.0.0] - Unreleased
+      MARKDOWN
+    end
   end
 end

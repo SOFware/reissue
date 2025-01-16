@@ -18,7 +18,7 @@ module Reissue
     private
 
     def versions
-      @changelog["versions"].map do |data|
+      @changelog["versions"].to_a.map do |data|
         version = data["version"]
         date = data["date"]
         changes = data.fetch("changes") do

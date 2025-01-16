@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.3.2] - Unreleased
 
+### Fixed
+
+- Parser will handle nil changes
+
 ## [0.3.1] - 2025-01-16
 
 ### Added
