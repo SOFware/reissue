@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.3.3] - Unreleased
 
+### Added
+
+- CODEOWNERS file
+
 ### Fixed
 
 - Properly retain changelog on `reissue:finalize`
