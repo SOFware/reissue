@@ -38,6 +38,34 @@ class TestReissue < Minitest::Spec
       assert_match(/2021-01-01/, contents)
       assert_match(/New feature/, contents)
     end
+
+    it "retains changelog history when specified" do
+      fixture_version = File.expand_path("fixtures/version.rb", __dir__)
+      version_file = Tempfile.new
+      version_file << File.read(fixture_version)
+      version_file.close
+
+      fixture_changelog = File.expand_path("fixtures/changelog.md", __dir__)
+      changelog_file = Tempfile.new
+      changelog_file << File.read(fixture_changelog)
+      changelog_file.close
+
+      Dir.mktmpdir do |tempdir|
+        Reissue.call(
+          version_file:,
+          changelog_file: changelog_file.path,
+          retain_changelogs: tempdir,
+          segment: "major",
+          changes: {"Added" => ["New feature"]}
+        )
+
+        retained_file = File.join(tempdir, "1.0.0.md")
+        assert File.exist?(retained_file)
+        contents = File.read(retained_file)
+        assert_match(/\[1.0.0\]/, contents)
+        assert_match(/New feature/, contents)
+      end
+    end
   end
 
   describe ".finalize" do

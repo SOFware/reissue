@@ -79,6 +79,11 @@ class TestChangelogUpdater < Minitest::Spec
     before do
       @file = File.expand_path("fixtures/changelog.md", __dir__)
       @changelog_updater = Reissue::ChangelogUpdater.new(@file)
+      @tempdir = Dir.mktmpdir
+    end
+
+    after do
+      FileUtils.remove_entry @tempdir
     end
 
     it "writes the contents of the changelog file" do
@@ -90,6 +95,19 @@ class TestChangelogUpdater < Minitest::Spec
       assert_match(/2020-01-01/, contents)
       assert_match(/Added/, contents)
       assert_match(/Feature 1/, contents)
+    end
+
+    it "retains changelogs using a custom proc" do
+      custom_path = File.join(@tempdir, "custom.md")
+      retention_proc = ->(version, content) { File.write(custom_path, content) }
+
+      @changelog_updater.update("2.0.0", changes: {"Added" => ["Feature 2"]})
+      @changelog_updater.write(custom_path, retain_changelogs: retention_proc)
+
+      assert File.exist?(custom_path)
+      contents = File.read(custom_path)
+      assert_match(/# \[2.0.0\]/, contents)
+      assert_match(/Feature 2/, contents)
     end
   end
 

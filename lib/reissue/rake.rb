@@ -31,6 +31,11 @@ module Reissue
     # The path to the changelog file.
     attr_accessor :changelog_file
 
+    # Set to true to retain the changelog files for the previous versions.
+    # Default: false.
+    # Provide a callable to decide how to store the files.
+    attr_accessor :retain_changelogs
+
     # Additional paths to add to the commit.
     attr_writer :updated_paths
 
@@ -68,6 +73,7 @@ module Reissue
       @version_file = nil
       @updated_paths = []
       @changelog_file = "CHANGELOG.md"
+      @retain_changelogs = false
       @commit = true
       @commit_finalize = true
       @push_finalize = false
