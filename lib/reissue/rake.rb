@@ -142,7 +142,7 @@ module Reissue
         else
           args[:version_limit].to_i
         end
-        formatter.reformat(changelog_file, version_limit:)
+        formatter.reformat(changelog_file, version_limit:, retain_changelogs:)
       end
 
       desc "Finalize the changelog for an unreleased version to set the release date."

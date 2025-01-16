@@ -58,10 +58,10 @@ module Reissue
     #
     # @param changelog_file [String] The path to the changelog file (default: @changelog_file).
     # @return [Hash] The parsed changelog.
-    def reformat(result_file = @changelog_file, version_limit: 2)
+    def reformat(result_file = @changelog_file, version_limit: 2, retain_changelogs: false)
       @changelog = Parser.parse(File.read(@changelog_file))
       changelog["versions"] = changelog["versions"].first(version_limit)
-      write(result_file)
+      write(result_file, retain_changelogs:)
       changelog
     end
 

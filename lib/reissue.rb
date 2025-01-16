@@ -51,8 +51,9 @@ module Reissue
   #
   # @param file [String] The path to the changelog file.
   # @param version_limit [Integer] The number of versions to retain in the changelog. Default: 2
-  def self.reformat(file, version_limit: 2)
+  # @param retain_changelogs [Boolean, String, Proc] Whether to retain the changelog files for the previous versions.
+  def self.reformat(file, version_limit: 2, retain_changelogs: false)
     changelog_updater = ChangelogUpdater.new(file)
-    changelog_updater.reformat(version_limit:)
+    changelog_updater.reformat(version_limit:, retain_changelogs:)
   end
 end
