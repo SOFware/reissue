@@ -41,9 +41,9 @@ module Reissue
   # @param changelog_file [String] The path to the changelog file.
   #
   # @return [Array] The version number and release date.
-  def self.finalize(date = Date.today, changelog_file: "CHANGELOG.md")
+  def self.finalize(date = Date.today, changelog_file: "CHANGELOG.md", retain_changelogs: false)
     changelog_updater = ChangelogUpdater.new(changelog_file)
-    changelog = changelog_updater.finalize(date:, changelog_file:)
+    changelog = changelog_updater.finalize(date:, changelog_file:, retain_changelogs:)
     changelog["versions"].first.slice("version", "date").values
   end
 

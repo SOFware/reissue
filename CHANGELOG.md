@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.3.3] - Unreleased
 
+### Fixed
+
+- Properly retain changelog on `reissue:finalize`
+
 ## [0.3.2] - 2025-01-16
 
 ### Fixed
