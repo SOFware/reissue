@@ -93,6 +93,16 @@ class TestReissue < Minitest::Spec
       assert_equal("0.1.2", version)
       assert_equal("2021-01-01", date)
     end
+
+    it "retains changelog history when specified" do
+      fixture_changelog = File.expand_path("fixtures/changelog.md", __dir__)
+      tempdir = Dir.mktmpdir
+      changelog_file = Tempfile.new
+      changelog_file << File.read(fixture_changelog)
+      changelog_file.close
+      Reissue.finalize("2021-01-01", changelog_file: changelog_file.path, retain_changelogs: tempdir)
+      assert File.exist?(File.join(tempdir, "0.1.2.md"))
+    end
   end
 
   describe ".reformat" do

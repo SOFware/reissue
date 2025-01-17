@@ -148,7 +148,7 @@ module Reissue
       desc "Finalize the changelog for an unreleased version to set the release date."
       task "#{name}:finalize", [:date] do |task, args|
         date = args[:date] || Time.now.strftime("%Y-%m-%d")
-        version, date = formatter.finalize(date, changelog_file:)
+        version, date = formatter.finalize(date, changelog_file:, retain_changelogs:)
         finalize_message = "Finalize the changelog for version #{version} on #{date}"
         if commit_finalize
           tasker["#{name}:branch"].invoke("reissue/#{version}") if finalize_with_branch?
