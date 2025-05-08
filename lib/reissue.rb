@@ -56,4 +56,34 @@ module Reissue
     changelog_updater = ChangelogUpdater.new(file)
     changelog_updater.reformat(version_limit:, retain_changelogs:)
   end
+
+  INITIAL_CHANGES = {
+    "Added" => ["Initial release"]
+  }
+
+  def self.generate_changelog(location, changes: {})
+    template = <<~EOF
+      # Changelog
+
+      All notable changes to this project will be documented in this file.
+
+      The format is based on [Keep a Changelog](http://keepachangelog.com/)
+      and this project adheres to [Semantic Versioning](http://semver.org/).
+
+      ## Unreleased
+
+      ## [0.1.0]
+    EOF
+
+    File.write(location, template)
+    changelog_updater = ChangelogUpdater.new(location)
+    changelog_updater.call(
+      "0.1.0",
+      date: "Unreleased",
+      changes: changes.empty? ? INITIAL_CHANGES : changes,
+      changelog_file: location,
+      version_limit: 1,
+      retain_changelogs: false
+    )
+  end
 end

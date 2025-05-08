@@ -144,4 +144,44 @@ class TestReissue < Minitest::Spec
       FIXED
     end
   end
+
+  describe ".generate_changelog" do
+    it "creates a new changelog file with initial content" do
+      changelog_file = Tempfile.new
+      version_file = Tempfile.new
+      version_file.write("module MyGem\n  VERSION = '0.1.0'\nend")
+      version_file.close
+
+      Reissue.generate_changelog(changelog_file.path)
+
+      contents = File.read(changelog_file)
+      assert_match(/Changelog/, contents)
+      assert_match(/Keep a Changelog/, contents)
+      assert_match(/Semantic Versioning/, contents)
+      assert_match(/Unreleased/, contents)
+      assert_match(/\[0.1.0\]/, contents)
+      assert_match(/Initial release/, contents)
+    end
+
+    it "accepts custom changes" do
+      changelog_file = Tempfile.new
+      version_file = Tempfile.new
+      version_file.write("module MyGem\n  VERSION = '0.1.0'\nend")
+      version_file.close
+
+      custom_changes = {
+        "Added" => ["Custom feature"],
+        "Fixed" => ["Bug fix"]
+      }
+
+      Reissue.generate_changelog(changelog_file.path, changes: custom_changes)
+
+      contents = File.read(changelog_file)
+      assert_match(/\[0.1.0\]/, contents)
+      assert_match(/### Added/, contents)
+      assert_match(/Custom feature/, contents)
+      assert_match(/### Fixed/, contents)
+      assert_match(/Bug fix/, contents)
+    end
+  end
 end
