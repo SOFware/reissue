@@ -142,6 +142,9 @@ module Reissue
         else
           args[:version_limit].to_i
         end
+        unless File.exist?(changelog_file)
+          formatter.generate_changelog(changelog_file)
+        end
         formatter.reformat(changelog_file, version_limit:, retain_changelogs:)
       end
 
