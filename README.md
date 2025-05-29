@@ -4,22 +4,25 @@ Prepare the releases of your Ruby gems with ease.
 
 When creating versioned software, it is important to keep track of the changes and the versions that are released.
 
-After each release of a gem, you should immediatly bump the version with a new number and update the changelog with a place
-to capture the information about new changes.
+## Bottome Line Up Front
 
-Reissue helps you to prepare the next version of your project by providing tools which will update version numbers and
-update the changelog with a new version and a date.
+When releasing gems you would typically do `rake build:checksum` to build the gem and generate the checksum.
+Then you would run `rake release` to push the `.gem` file to [rubygems.org](https://rubygems.org) (or your gem server).
 
-Use Reissue to prepare your first commit going into the new version.
+The process is still the same with Reissue, but you get changelog cleanup and version number management for free.
 
-Standard procedure for releasing projects with Reissue:
+It also has support for non-gem projects.
 
-1. Create a version with some number like 0.1.0.
-2. Add commits to the project. These will be associated with the version 0.1.0.
-3. When you are releasing your project, finalize it by running
-  `rake reissue:finalize` to update the Unreleased version in your changelog.
-4. Bump the version to 0.1.1 with `rake reissue[patch]` and commit those changes.
-   Future commits will be associated with the version 0.1.1 until your next release.
+## How it works
+
+The approach is this:
+
+1. Declare on what version you're working. For example all of my initial commits are associated with version 0.1.0 and the gem (or other project) is unreleased.
+2. Add commits to the project.
+3. Release the project, marking the end of the development on version 0.1.0.
+4. Immediately bump the version with a new number (0.1.1 for example), update the changelog with a place to capture the information about new changes, and push the changes to the repository for continued development.
+
+After each release of a gem Reissue takes care of immediately bumping the version with a new number and updating the changelog with a place to capture the information about new changes.
 
 ## Installation
 
@@ -33,6 +36,8 @@ If bundler is not being used to manage dependencies, install the gem by executin
 
 ## Usage
 
+### Gem Projects
+
 If you are working with a gem, you can add the following to the Rakefile:
 
 ```ruby
@@ -44,7 +49,7 @@ Reissue::Task.create :reissue do |task|
 end
 ```
 
-This will add the following rake tasks:
+This will add the following rake tasks which you typically do not need to run manually:
 
 - `rake reissue[segment]` - Prepare a new version for future work for the given
   version segment.
@@ -64,6 +69,8 @@ up-to-date before the gem is built.
 It updates the `release` task from rubygems to run `reissue` after the gem is
 pushed to rubygems.
 
+### Non-Gem Projects
+
 Build your own release with rake tasks provided by the gem.
 
 Add the following to the Rakefile:
@@ -76,6 +83,10 @@ Reissue::Task.create :reissue do |task|
   task.version_file = "path/to/version.rb"
 end
 ```
+
+Use the provided rake tasks to prepare the next version of your project.
+
+### Customizing the Rake Tasks
 
 When creating your task, you have additional options to customize the behavior:
 
