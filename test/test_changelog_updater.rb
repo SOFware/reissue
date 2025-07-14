@@ -111,6 +111,95 @@ class TestChangelogUpdater < Minitest::Spec
     end
   end
 
+  describe "update with fragments" do
+    before do
+      @file = File.expand_path("fixtures/changelog.md", __dir__)
+      @changelog_updater = Reissue::ChangelogUpdater.new(@file)
+      @tmpdir = Dir.mktmpdir
+      @fragment_dir = File.join(@tmpdir, "changelog.d")
+      FileUtils.mkdir_p(@fragment_dir)
+    end
+
+    after do
+      FileUtils.remove_entry @tmpdir
+    end
+
+    it "merges fragment changes with provided changes" do
+      File.write(File.join(@fragment_dir, "123.added.md"), "Fragment feature")
+      File.write(File.join(@fragment_dir, "124.fixed.md"), "Fragment fix")
+
+      @changelog_updater.update(
+        "1.0.0",
+        date: "2020-01-01",
+        changes: {"Added" => ["Manual feature"]},
+        fragment_directory: @fragment_dir
+      )
+
+      contents = @changelog_updater.to_s
+      assert_match(/Manual feature/, contents)
+      assert_match(/Fragment feature/, contents)
+      assert_match(/Fragment fix/, contents)
+    end
+
+    it "creates sections from fragments when not in provided changes" do
+      File.write(File.join(@fragment_dir, "123.security.md"), "Security patch")
+
+      @changelog_updater.update(
+        "1.0.0",
+        changes: {"Added" => ["New feature"]},
+        fragment_directory: @fragment_dir
+      )
+
+      contents = @changelog_updater.to_s
+      assert_match(/### Added/, contents)
+      assert_match(/### Security/, contents)
+      assert_match(/Security patch/, contents)
+    end
+  end
+
+  describe "call with fragments" do
+    before do
+      @file = File.expand_path("fixtures/changelog.md", __dir__)
+      @tempfile = Tempfile.new
+      @changelog_updater = Reissue::ChangelogUpdater.new(@file)
+      @tmpdir = Dir.mktmpdir
+      @fragment_dir = File.join(@tmpdir, "changelog.d")
+      FileUtils.mkdir_p(@fragment_dir)
+    end
+
+    after do
+      FileUtils.remove_entry @tmpdir
+    end
+
+    it "clears fragments when clear_fragments is true" do
+      File.write(File.join(@fragment_dir, "123.added.md"), "Feature")
+      File.write(File.join(@fragment_dir, "124.fixed.md"), "Fix")
+
+      @changelog_updater.call(
+        "1.0.0",
+        changelog_file: @tempfile.path,
+        fragment_directory: @fragment_dir,
+        clear_fragments: true
+      )
+
+      refute File.exist?(File.join(@fragment_dir, "123.added.md"))
+      refute File.exist?(File.join(@fragment_dir, "124.fixed.md"))
+    end
+
+    it "preserves fragments when clear_fragments is false" do
+      File.write(File.join(@fragment_dir, "123.added.md"), "Feature")
+
+      @changelog_updater.call(
+        "1.0.0",
+        changelog_file: @tempfile.path,
+        fragment_directory: @fragment_dir,
+        clear_fragments: false
+      )
+
+      assert File.exist?(File.join(@fragment_dir, "123.added.md"))
+    end
+  end
+
   describe "reformat" do
     before do
       @file = File.expand_path("fixtures/changelog.md", __dir__)

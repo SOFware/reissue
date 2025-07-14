@@ -36,6 +36,14 @@ module Reissue
     # Provide a callable to decide how to store the files.
     attr_accessor :retain_changelogs
 
+    # The directory containing fragment files for changelog entries.
+    # Default: nil (disabled).
+    attr_accessor :fragment_directory
+
+    # Whether to clear fragment files after processing.
+    # Default: false.
+    attr_accessor :clear_fragments
+
     # Additional paths to add to the commit.
     attr_writer :updated_paths
 
@@ -74,6 +82,8 @@ module Reissue
       @updated_paths = []
       @changelog_file = "CHANGELOG.md"
       @retain_changelogs = false
+      @fragment_directory = nil
+      @clear_fragments = false
       @commit = true
       @commit_finalize = true
       @push_finalize = false
@@ -113,7 +123,14 @@ module Reissue
       desc description
       task name, [:segment] do |task, args|
         segment = args[:segment] || "patch"
-        new_version = formatter.call(segment:, version_file:, version_limit:, version_redo_proc:)
+        new_version = formatter.call(
+          segment:,
+          version_file:,
+          version_limit:,
+          version_redo_proc:,
+          fragment_directory:,
+          clear_fragments:
+        )
         bundle
 
         system("git add -u")
@@ -151,7 +168,13 @@ module Reissue
       desc "Finalize the changelog for an unreleased version to set the release date."
       task "#{name}:finalize", [:date] do |task, args|
         date = args[:date] || Time.now.strftime("%Y-%m-%d")
-        version, date = formatter.finalize(date, changelog_file:, retain_changelogs:)
+        version, date = formatter.finalize(
+          date,
+          changelog_file:,
+          retain_changelogs:,
+          fragment_directory:,
+          clear_fragments:
+        )
         finalize_message = "Finalize the changelog for version #{version} on #{date}"
         if commit_finalize
           tasker["#{name}:branch"].invoke("reissue/#{version}") if finalize_with_branch?

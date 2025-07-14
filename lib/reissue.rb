@@ -3,6 +3,7 @@
 require_relative "reissue/version"
 require_relative "reissue/version_updater"
 require_relative "reissue/changelog_updater"
+require_relative "reissue/fragment_reader"
 
 # Reissue is a module that provides functionality for updating version numbers and changelogs.
 module Reissue
@@ -14,6 +15,8 @@ module Reissue
   # @param date [String] The release date. Default: Unreleased
   # @param changes [Hash] The changes made in this release. Default: {}
   # @param version_limit [Integer] The number of versions to retain in the changes. Default: 2
+  # @param fragment_directory [String] The directory containing fragment files. Default: nil
+  # @param clear_fragments [Boolean] Whether to clear fragment files after processing. Default: false
   #
   # @return [String] The new version number.
   def self.call(
@@ -24,13 +27,15 @@ module Reissue
     date: "Unreleased",
     changes: {},
     version_limit: 2,
-    version_redo_proc: nil
+    version_redo_proc: nil,
+    fragment_directory: nil,
+    clear_fragments: false
   )
     version_updater = VersionUpdater.new(version_file, version_redo_proc:)
     new_version = version_updater.call(segment, version_file:)
     if changelog_file
       changelog_updater = ChangelogUpdater.new(changelog_file)
-      changelog_updater.call(new_version, date:, changes:, changelog_file:, version_limit:, retain_changelogs:)
+      changelog_updater.call(new_version, date:, changes:, changelog_file:, version_limit:, retain_changelogs:, fragment_directory:, clear_fragments:)
     end
     new_version
   end
@@ -39,11 +44,41 @@ module Reissue
   #
   # @param date [String] The release date.
   # @param changelog_file [String] The path to the changelog file.
+  # @param fragment_directory [String] The directory containing fragment files. Default: nil
+  # @param clear_fragments [Boolean] Whether to clear fragment files after processing. Default: false
   #
   # @return [Array] The version number and release date.
-  def self.finalize(date = Date.today, changelog_file: "CHANGELOG.md", retain_changelogs: false)
+  def self.finalize(date = Date.today, changelog_file: "CHANGELOG.md", retain_changelogs: false, fragment_directory: nil, clear_fragments: false)
     changelog_updater = ChangelogUpdater.new(changelog_file)
+
+    # If fragments are present, we need to update the unreleased version with them first
+    if fragment_directory
+      # Get the current changelog to find the unreleased version
+      changelog = Parser.parse(File.read(changelog_file))
+      unreleased_version = changelog["versions"].find { |v| v["date"] == "Unreleased" }
+
+      if unreleased_version
+        # Update with fragment data
+        changelog_updater.update(
+          unreleased_version["version"],
+          date: "Unreleased",
+          changes: unreleased_version["changes"] || {},
+          fragment_directory: fragment_directory,
+          version_limit: changelog["versions"].size
+        )
+        changelog_updater.write(changelog_file, retain_changelogs: false)
+      end
+    end
+
+    # Now finalize with the date
     changelog = changelog_updater.finalize(date:, changelog_file:, retain_changelogs:)
+
+    # Clear fragments if requested
+    if fragment_directory && clear_fragments
+      fragment_reader = FragmentReader.new(fragment_directory)
+      fragment_reader.clear
+    end
+
     changelog["versions"].first.slice("version", "date").values
   end
 
