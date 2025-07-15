@@ -1,5 +1,6 @@
 require_relative "parser"
 require_relative "printer"
+require_relative "fragment_reader"
 
 module Reissue
   # Updates the changelog file with new versions and changes.
@@ -18,9 +19,18 @@ module Reissue
     # @param changes [Hash] The changes for the version (default: {}).
     # @param changelog_file [String] The path to the changelog file (default: @changelog_file).
     # @param version_limit [Integer] The number of versions to keep (default: 2).
-    def call(version, date: "Unreleased", changes: {}, changelog_file: @changelog_file, version_limit: 2, retain_changelogs: false)
-      update(version, date:, changes:, version_limit:)
+    # @param fragment_directory [String] The directory containing fragment files (default: nil).
+    # @param clear_fragments [Boolean] Whether to clear fragment files after processing (default: false).
+    def call(version, date: "Unreleased", changes: {}, changelog_file: @changelog_file, version_limit: 2, retain_changelogs: false, fragment_directory: nil, clear_fragments: false)
+      update(version, date:, changes:, version_limit:, fragment_directory:)
       write(changelog_file, retain_changelogs:)
+
+      # Clear fragments if requested
+      if fragment_directory && clear_fragments
+        fragment_reader = FragmentReader.new(fragment_directory)
+        fragment_reader.clear
+      end
+
       changelog
     end
 
@@ -45,11 +55,23 @@ module Reissue
     # @param date [String] The release date (default: "Unreleased").
     # @param changes [Hash] The changes for the version (default: {}).
     # @param version_limit [Integer] The number of versions to keep (default: 2).
+    # @param fragment_directory [String] The directory containing fragment files (default: nil).
     # @return [Hash] The updated changelog.
-    def update(version, date: "Unreleased", changes: {}, version_limit: 2)
+    def update(version, date: "Unreleased", changes: {}, version_limit: 2, fragment_directory: nil)
       @changelog = Parser.parse(File.read(@changelog_file))
 
-      changelog["versions"].unshift({"version" => version, "date" => date, "changes" => changes})
+      # Merge fragment changes if directory is provided
+      merged_changes = changes.dup
+      if fragment_directory
+        fragment_reader = FragmentReader.new(fragment_directory)
+        fragment_changes = fragment_reader.read
+        fragment_changes.each do |section, entries|
+          merged_changes[section] ||= []
+          merged_changes[section].concat(entries)
+        end
+      end
+
+      changelog["versions"].unshift({"version" => version, "date" => date, "changes" => merged_changes})
       changelog["versions"] = changelog["versions"].first(version_limit)
       changelog
     end
