@@ -20,16 +20,9 @@ module Reissue
     # @param changelog_file [String] The path to the changelog file (default: @changelog_file).
     # @param version_limit [Integer] The number of versions to keep (default: 2).
     # @param fragment_directory [String] The directory containing fragment files (default: nil).
-    # @param clear_fragments [Boolean] Whether to clear fragment files after processing (default: false).
-    def call(version, date: "Unreleased", changes: {}, changelog_file: @changelog_file, version_limit: 2, retain_changelogs: false, fragment_directory: nil, clear_fragments: false)
+    def call(version, date: "Unreleased", changes: {}, changelog_file: @changelog_file, version_limit: 2, retain_changelogs: false, fragment_directory: nil)
       update(version, date:, changes:, version_limit:, fragment_directory:)
       write(changelog_file, retain_changelogs:)
-
-      # Clear fragments if requested
-      if fragment_directory && clear_fragments
-        fragment_reader = FragmentReader.new(fragment_directory)
-        fragment_reader.clear
-      end
 
       changelog
     end

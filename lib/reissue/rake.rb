@@ -57,6 +57,9 @@ module Reissue
     # Whether to commit the finalize change to the changelog. Default: true.
     attr_accessor :commit_finalize
 
+    # Whether to commit the clear fragments change. Default: true.
+    attr_accessor :commit_clear_fragments
+
     # Whether to branch and push the changes. Default: :branch.
     # Requires commit_finialize to be true.
     #
@@ -86,6 +89,7 @@ module Reissue
       @clear_fragments = false
       @commit = true
       @commit_finalize = true
+      @commit_clear_fragments = true
       @push_finalize = false
       @version_limit = 2
       @version_redo_proc = nil
@@ -128,8 +132,7 @@ module Reissue
           version_file:,
           version_limit:,
           version_redo_proc:,
-          fragment_directory:,
-          clear_fragments:
+          fragment_directory:
         )
         bundle
 
@@ -172,8 +175,7 @@ module Reissue
           date,
           changelog_file:,
           retain_changelogs:,
-          fragment_directory:,
-          clear_fragments:
+          fragment_directory:
         )
         finalize_message = "Finalize the changelog for version #{version} on #{date}"
         if commit_finalize
@@ -195,6 +197,21 @@ module Reissue
       desc "Push the current branch to the remote repository."
       task "#{name}:push" do
         system("git push origin HEAD")
+      end
+
+      desc "Clear fragments"
+      task "#{name}:clear_fragments" do
+        # Clear fragments after release if configured
+        if fragment_directory && clear_fragments
+          formatter.clear_fragments(fragment_directory)
+          clear_message = "Clear changelog fragments"
+          if commit_clear_fragments
+            system("git add #{fragment_directory}")
+            system("git commit -m '#{clear_message}'")
+          else
+            system("echo '#{clear_message}'")
+          end
+        end
       end
     end
   end
