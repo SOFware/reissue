@@ -61,6 +61,8 @@ This will add the following rake tasks which you typically do not need to run ma
   Controlled by the `push_finalize` and `commit_finalize` options.
 - `rake reissue:push` - Push the changes to the remote repository. Controlled
   by the `push_finalize` and `commit_finalize` options.
+- `rake clear_fragments` - Clear changelog fragments after a release. Only runs
+  if `fragment_directory` and `clear_fragments` are configured.
 
 This will also update the `build` task from rubygems to first run
 `reissue:finalize` and then build the gem, ensuring that your changelog is
@@ -133,6 +135,13 @@ Reissue::Task.create :your_name_and_namespace do |task|
 
   # Optional: Whether to push the changes automatically. Defaults to false.
   task.push_finalize = :branch # or false, or true to push the working branch
+
+  # Optional: Directory containing fragment files for changelog entries. Defaults to nil (disabled).
+  task.fragment_directory = "changelog_fragments"
+
+  # Optional: Whether to clear fragment files after releasing. Defaults to false.
+  # When true, fragments are cleared by the reissue:release task after a release.
+  task.clear_fragments = true
 end
 ```
 

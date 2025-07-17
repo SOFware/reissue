@@ -171,29 +171,13 @@ class TestChangelogUpdater < Minitest::Spec
       FileUtils.remove_entry @tmpdir
     end
 
-    it "clears fragments when clear_fragments is true" do
-      File.write(File.join(@fragment_dir, "123.added.md"), "Feature")
-      File.write(File.join(@fragment_dir, "124.fixed.md"), "Fix")
-
-      @changelog_updater.call(
-        "1.0.0",
-        changelog_file: @tempfile.path,
-        fragment_directory: @fragment_dir,
-        clear_fragments: true
-      )
-
-      refute File.exist?(File.join(@fragment_dir, "123.added.md"))
-      refute File.exist?(File.join(@fragment_dir, "124.fixed.md"))
-    end
-
-    it "preserves fragments when clear_fragments is false" do
+    it "preserves fragments after updating changelog" do
       File.write(File.join(@fragment_dir, "123.added.md"), "Feature")
 
       @changelog_updater.call(
         "1.0.0",
         changelog_file: @tempfile.path,
-        fragment_directory: @fragment_dir,
-        clear_fragments: false
+        fragment_directory: @fragment_dir
       )
 
       assert File.exist?(File.join(@fragment_dir, "123.added.md"))

@@ -184,4 +184,41 @@ class TestReissue < Minitest::Spec
       assert_match(/Bug fix/, contents)
     end
   end
+
+  describe ".clear_fragments" do
+    it "clears all fragment files in the directory" do
+      Dir.mktmpdir do |tempdir|
+        fragment_dir = File.join(tempdir, "fragments")
+        Dir.mkdir(fragment_dir)
+
+        # Create some fragment files
+        File.write(File.join(fragment_dir, "123.added.md"), "Feature 1")
+        File.write(File.join(fragment_dir, "124.fixed.md"), "Bug fix")
+        File.write(File.join(fragment_dir, "125.changed.md"), "Updated something")
+
+        # Verify files exist
+        assert File.exist?(File.join(fragment_dir, "123.added.md"))
+        assert File.exist?(File.join(fragment_dir, "124.fixed.md"))
+        assert File.exist?(File.join(fragment_dir, "125.changed.md"))
+
+        # Clear fragments
+        Reissue.clear_fragments(fragment_dir)
+
+        # Verify files are removed
+        refute File.exist?(File.join(fragment_dir, "123.added.md"))
+        refute File.exist?(File.join(fragment_dir, "124.fixed.md"))
+        refute File.exist?(File.join(fragment_dir, "125.changed.md"))
+      end
+    end
+
+    it "handles non-existent directory gracefully" do
+      # Should not raise an error
+      Reissue.clear_fragments("/non/existent/directory")
+    end
+
+    it "handles nil directory gracefully" do
+      # Should not raise an error
+      Reissue.clear_fragments(nil)
+    end
+  end
 end
