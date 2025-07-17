@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.4.1] - Unreleased
 
+### Added
+
+- Add GitHub Actions workflow to release gems with Reissue
+
 ### Changed
 
 - Update README to clarify information about typical usage
