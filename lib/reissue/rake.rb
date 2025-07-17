@@ -136,6 +136,8 @@ module Reissue
         )
         bundle
 
+        tasker["#{name}:clear_fragments"].invoke
+
         system("git add -u")
         if updated_paths&.any?
           system("git add #{updated_paths.join(" ")}")
