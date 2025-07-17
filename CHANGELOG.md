@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - Add GitHub Actions workflow to release gems with Reissue
+- Add `reissue:clear_fragments` task to clear fragments after release
 
 ### Changed
 
