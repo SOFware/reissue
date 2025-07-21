@@ -85,7 +85,7 @@ jobs:
           version_file="${version_file//\{gem_name\}/${{ inputs.gem_name }}}"
           
           # Extract module/class name and version
-          module_name=$(echo "${{ inputs.gem_name }}" | sed 's/_\([a-z]\)/\u\1/g' | sed 's/^./\u&/')
+          module_name=$(echo "${{ inputs.gem_name }}" | sed 's/-/::/g' | sed 's/_\([a-z]\)/\u\1/g' | sed 's/^./\u&/' | sed 's/::\([a-z]\)/::\u\1/g')
           current_version=$(ruby -r ./$version_file -e "puts ${module_name}::VERSION")
           
           echo "current_version=$current_version" >> $GITHUB_OUTPUT
@@ -183,7 +183,7 @@ jobs:
           version_file="${{ inputs.version_file_path }}"
           version_file="${version_file//\{gem_name\}/${{ inputs.gem_name }}}"
           
-          module_name=$(echo "${{ inputs.gem_name }}" | sed 's/_\([a-z]\)/\u\1/g' | sed 's/^./\u&/')
+          module_name=$(echo "${{ inputs.gem_name }}" | sed 's/-/::/g' | sed 's/_\([a-z]\)/\u\1/g' | sed 's/^./\u&/' | sed 's/::\([a-z]\)/::\u\1/g')
           new_version=$(ruby -r ./$version_file -e "puts ${module_name}::VERSION")
           
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
