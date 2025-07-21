@@ -40,14 +40,12 @@ jobs:
         run: |
           # this is to fix GIT not liking owner of the checkout dir
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - uses: amancevice/setup-code-climate@v1
-        with:
-          cc_test_reporter_id: ${{ secrets.CC_TEST_REPORTER_ID }}
-      - run: cc-test-reporter before-build
       - name: Test
         run: bundle exec rake
-      - run: cc-test-reporter after-build
-        if: ${{ github.event_name != 'pull_request' }}
+      - uses: qltysh/qlty-action/coverage@v1
+        with:
+          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+          files: coverage/.resultset.json
 
   linter:
     name: Linter
