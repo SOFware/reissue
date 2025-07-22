@@ -47,10 +47,15 @@ on:
         required: false
         default: false
         type: boolean
+      use_trusted_publishing:
+        description: 'Use GitHub OIDC trusted publishing instead of API key'
+        required: false
+        default: false
+        type: boolean
     secrets:
       rubygems_api_key:
         description: 'RubyGems API key for publishing'
-        required: true
+        required: false
 
 jobs:
   prepare-release:
@@ -204,7 +209,7 @@ jobs:
       - name: Release gem to RubyGems
         run: ${{ inputs.publish_command }}
         env:
-          GEM_HOST_API_KEY: ${{ secrets.rubygems_api_key }}
+          GEM_HOST_API_KEY: ${{ !inputs.use_trusted_publishing && secrets.rubygems_api_key || '' }}
 
       - name: Pull latest changes after release
         run: |
@@ -267,6 +272,7 @@ jobs:
     runs-on: ubuntu-latest
     if: inputs.manual_release
     permissions:
+      id-token: write
       contents: write
       issues: write
       pull-requests: write
@@ -319,7 +325,7 @@ jobs:
       - name: Release gem to RubyGems
         run: ${{ inputs.publish_command }}
         env:
-          GEM_HOST_API_KEY: ${{ secrets.rubygems_api_key }}
+          GEM_HOST_API_KEY: ${{ !inputs.use_trusted_publishing && secrets.rubygems_api_key || '' }}
 
       - name: Pull latest changes after release
         run: |
