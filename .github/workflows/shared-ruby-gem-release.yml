@@ -74,9 +74,10 @@ jobs:
           bundler-cache: true
           ruby-version: ${{ inputs.ruby_version }}
       
-      - name: Configure Bundler
+      - name: Configure Bundler for CI
         run: |
-          bundle config set frozen false
+          bundle config set --local path ''
+          bundle config set --local deployment false
 
       - name: Get current version
         id: current_version
@@ -168,9 +169,10 @@ jobs:
           bundler-cache: true
           ruby-version: ${{ inputs.ruby_version }}
 
-      - name: Configure Bundler
+      - name: Configure Bundler for CI
         run: |
-          bundle config set frozen false
+          bundle config set --local path ''
+          bundle config set --local deployment false
 
       - name: Release gem to RubyGems
         run: ${{ inputs.publish_command }}
