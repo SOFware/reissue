@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Update README to clarify information about typical usage
 - Updated the shared gem release workflow to work with hyphenated gem names.
+- Rely on `rubygems/configure-rubygems-credentials` action.
 
 ## [0.4.0] - 2025-05-08
 
