@@ -74,10 +74,10 @@ jobs:
           bundler-cache: true
           ruby-version: ${{ inputs.ruby_version }}
       
-      - name: Configure Bundler for CI
+      - name: Ignore vendor directory in git
         run: |
-          bundle config set --local path ''
-          bundle config set --local deployment false
+          echo "vendor/" >> .gitignore
+          git add .gitignore || true
 
       - name: Get current version
         id: current_version
@@ -169,10 +169,10 @@ jobs:
           bundler-cache: true
           ruby-version: ${{ inputs.ruby_version }}
 
-      - name: Configure Bundler for CI
+      - name: Ignore vendor directory in git
         run: |
-          bundle config set --local path ''
-          bundle config set --local deployment false
+          echo "vendor/" >> .gitignore
+          git add .gitignore || true
 
       - name: Release gem to RubyGems
         run: ${{ inputs.publish_command }}
