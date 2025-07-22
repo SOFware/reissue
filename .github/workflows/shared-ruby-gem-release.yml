@@ -42,6 +42,11 @@ on:
         required: false
         default: false
         type: boolean
+      manual_release:
+        description: 'Manually release an already-finalized version (skips prepare, goes straight to publish)'
+        required: false
+        default: false
+        type: boolean
     secrets:
       rubygems_api_key:
         description: 'RubyGems API key for publishing'
@@ -51,7 +56,7 @@ jobs:
   prepare-release:
     name: Prepare release
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && !inputs.manual_release
     permissions:
       contents: write
       issues: write
@@ -201,32 +206,49 @@ jobs:
         env:
           GEM_HOST_API_KEY: ${{ secrets.rubygems_api_key }}
 
-      - name: Get new version
-        id: new_version
+      - name: Pull latest changes after release
         run: |
-          version_file="${{ inputs.version_file_path }}"
-          version_file="${version_file//\{gem_name\}/${{ inputs.gem_name }}}"
-          
-          module_name=$(echo "${{ inputs.gem_name }}" | sed 's/-/::/g' | sed 's/_\([a-z]\)/\u\1/g' | sed 's/^./\u&/' | sed 's/::\([a-z]\)/::\u\1/g')
-          new_version=$(ruby -r ./$version_file -e "puts ${module_name}::VERSION")
-          
-          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          git pull origin main
+
+      - name: Check if version was bumped by reissue
+        id: check_bump
+        run: |
+          # Get the latest commit message
+          latest_commit=$(git log -1 --pretty=format:"%s")
+          echo "latest_commit=$latest_commit"
+
+          # Check if reissue created a version bump commit
+          if [[ "$latest_commit" == *"Bump version to"* ]]; then
+            echo "version_bumped=true" >> $GITHUB_OUTPUT
+            # Extract version from commit message
+            new_version=$(echo "$latest_commit" | grep -o "Bump version to [0-9]\+\.[0-9]\+\.[0-9]\+" | sed 's/Bump version to //')
+            echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          else
+            echo "version_bumped=false" >> $GITHUB_OUTPUT
+            # Fallback to reading from version file
+            version_file="${{ inputs.version_file_path }}"
+            version_file="${version_file//\{gem_name\}/${{ inputs.gem_name }}}"
+            module_name=$(echo "${{ inputs.gem_name }}" | sed 's/-/::/g' | sed 's/_\([a-z]\)/\u\1/g' | sed 's/^./\u&/' | sed 's/::\([a-z]\)/::\u\1/g')
+            new_version=$(ruby -r ./$version_file -e "puts ${module_name}::VERSION")
+            echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create Pull Request for next version
+        if: steps.check_bump.outputs.version_bumped == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: bump-version-${{ steps.new_version.outputs.new_version }}
+          branch: bump-version-${{ steps.check_bump.outputs.new_version }}
           base: main
-          commit-message: "Bump version to ${{ steps.new_version.outputs.new_version }}"
-          title: "Bump version to ${{ steps.new_version.outputs.new_version }}"
+          commit-message: "Post-release: Version bump to ${{ steps.check_bump.outputs.new_version }}"
+          title: "Bump version to ${{ steps.check_bump.outputs.new_version }}"
           body: |
             ## 🔄 Post-Release Version Bump
 
-            This PR prepares the codebase for development of version ${{ steps.new_version.outputs.new_version }}.
+            This PR includes the automatic version bump created by reissue after publishing version ${{ steps.check_bump.outputs.new_version }}.
 
             ### Changes Made
-            - ✅ Version bumped to ${{ steps.new_version.outputs.new_version }}
+            - ✅ Version bumped to ${{ steps.check_bump.outputs.new_version }}
             - ✅ CHANGELOG.md prepared with new Unreleased section
             - ✅ Gemfile.lock updated with new version
             - ✅ All dependencies resolved via bundle install
@@ -235,7 +257,122 @@ jobs:
             1. Review the version bump
             2. Merge this PR to continue development
 
-            All future commits will be tracked under version ${{ steps.new_version.outputs.new_version }}.
+            All future commits will be tracked under version ${{ steps.check_bump.outputs.new_version }}.
+          labels: |
+            dependencies
+            automated
+
+  manual-release:
+    name: Manual Release
+    runs-on: ubuntu-latest
+    if: inputs.manual_release
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Git
+        run: |
+          git config --global user.email "${{ inputs.git_user_email }}"
+          git config --global user.name "${{ inputs.git_user_name }}"
+
+      - name: Ensure vendor directory is ignored
+        run: |
+          if [ -f .gitignore ]; then
+            if ! grep -q "^vendor/" .gitignore; then
+              # Ensure the file ends with a newline before appending
+              [ -s .gitignore ] && [ "$(tail -c1 .gitignore)" != "" ] && echo "" >> .gitignore
+              echo "vendor/" >> .gitignore
+              git add .gitignore
+              git commit -m "Add vendor/ to .gitignore"
+            fi
+          else
+            echo "vendor/" > .gitignore
+            git add .gitignore
+            git commit -m "Add vendor/ to .gitignore"
+          fi
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          ruby-version: ${{ inputs.ruby_version }}
+
+      - name: Get current version before release
+        id: current_version
+        run: |
+          version_file="${{ inputs.version_file_path }}"
+          version_file="${version_file//\{gem_name\}/${{ inputs.gem_name }}}"
+          
+          # Extract module/class name and version
+          module_name=$(echo "${{ inputs.gem_name }}" | sed 's/-/::/g' | sed 's/_\([a-z]\)/\u\1/g' | sed 's/^./\u&/' | sed 's/::\([a-z]\)/::\u\1/g')
+          current_version=$(ruby -r ./$version_file -e "puts ${module_name}::VERSION")
+          
+          echo "current_version=$current_version" >> $GITHUB_OUTPUT
+
+      - name: Release gem to RubyGems
+        run: ${{ inputs.publish_command }}
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.rubygems_api_key }}
+
+      - name: Pull latest changes after release
+        run: |
+          git pull origin main
+
+      - name: Check if version was bumped by reissue
+        id: check_bump
+        run: |
+          # Get the latest commit message
+          latest_commit=$(git log -1 --pretty=format:"%s")
+          echo "latest_commit=$latest_commit"
+
+          # Check if reissue created a version bump commit
+          if [[ "$latest_commit" == *"Bump version to"* ]]; then
+            echo "version_bumped=true" >> $GITHUB_OUTPUT
+            # Extract version from commit message
+            new_version=$(echo "$latest_commit" | grep -o "Bump version to [0-9]\+\.[0-9]\+\.[0-9]\+" | sed 's/Bump version to //')
+            echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          else
+            echo "version_bumped=false" >> $GITHUB_OUTPUT
+            # Fallback to reading from version file
+            version_file="${{ inputs.version_file_path }}"
+            version_file="${version_file//\{gem_name\}/${{ inputs.gem_name }}}"
+            module_name=$(echo "${{ inputs.gem_name }}" | sed 's/-/::/g' | sed 's/_\([a-z]\)/\u\1/g' | sed 's/^./\u&/' | sed 's/::\([a-z]\)/::\u\1/g')
+            new_version=$(ruby -r ./$version_file -e "puts ${module_name}::VERSION")
+            echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request for next version
+        if: steps.check_bump.outputs.version_bumped == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: bump-version-${{ steps.check_bump.outputs.new_version }}
+          base: main
+          commit-message: "Post-release: Version bump to ${{ steps.check_bump.outputs.new_version }}"
+          title: "Bump version to ${{ steps.check_bump.outputs.new_version }}"
+          body: |
+            ## 🔄 Post-Release Version Bump
+
+            This PR includes the automatic version bump created by reissue after manually releasing version ${{ steps.current_version.outputs.current_version }}.
+
+            ### Changes Made
+            - ✅ Version bumped to ${{ steps.check_bump.outputs.new_version }}
+            - ✅ CHANGELOG.md prepared with new Unreleased section
+            - ✅ Gemfile.lock updated with new version
+            - ✅ All dependencies resolved via bundle install
+
+            ### Next Steps
+            1. Review the version bump
+            2. Merge this PR to continue development
+
+            All future commits will be tracked under version ${{ steps.check_bump.outputs.new_version }}.
           labels: |
             dependencies
             automated
