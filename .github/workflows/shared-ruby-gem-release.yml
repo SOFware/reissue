@@ -76,8 +76,15 @@ jobs:
       
       - name: Ignore vendor directory in git
         run: |
-          echo "vendor/" >> .gitignore
-          git add .gitignore || true
+          if [ -f .gitignore ]; then
+            if ! grep -q "^vendor/" .gitignore; then
+              echo "vendor/" >> .gitignore
+              git add .gitignore
+            fi
+          else
+            echo "vendor/" > .gitignore
+            git add .gitignore
+          fi
 
       - name: Get current version
         id: current_version
@@ -171,8 +178,15 @@ jobs:
 
       - name: Ignore vendor directory in git
         run: |
-          echo "vendor/" >> .gitignore
-          git add .gitignore || true
+          if [ -f .gitignore ]; then
+            if ! grep -q "^vendor/" .gitignore; then
+              echo "vendor/" >> .gitignore
+              git add .gitignore
+            fi
+          else
+            echo "vendor/" > .gitignore
+            git add .gitignore
+          fi
 
       - name: Release gem to RubyGems
         run: ${{ inputs.publish_command }}
