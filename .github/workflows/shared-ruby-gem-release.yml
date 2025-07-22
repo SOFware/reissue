@@ -206,10 +206,19 @@ jobs:
           bundler-cache: true
           ruby-version: ${{ inputs.ruby_version }}
 
+      - name: Configure RubyGems credentials
+        if: inputs.use_trusted_publishing
+        uses: rubygems/configure-rubygems-credentials@main
+        with:
+          trusted-publisher: true
+          audience: "rubygems.org"
+          gem-server: "https://rubygems.org"
+
       - name: Release gem to RubyGems
         run: ${{ inputs.publish_command }}
         env:
           GEM_HOST_API_KEY: ${{ !inputs.use_trusted_publishing && secrets.rubygems_api_key || '' }}
+          RUBYGEMS_HOST: ${{ inputs.use_trusted_publishing && 'https://rubygems.org' || '' }}
 
       - name: Pull latest changes after release
         run: |
@@ -310,6 +319,14 @@ jobs:
           bundler-cache: true
           ruby-version: ${{ inputs.ruby_version }}
 
+      - name: Configure RubyGems credentials
+        if: inputs.use_trusted_publishing
+        uses: rubygems/configure-rubygems-credentials@main
+        with:
+          trusted-publisher: true
+          audience: "rubygems.org"
+          gem-server: "https://rubygems.org"
+
       - name: Get current version before release
         id: current_version
         run: |
@@ -326,6 +343,7 @@ jobs:
         run: ${{ inputs.publish_command }}
         env:
           GEM_HOST_API_KEY: ${{ !inputs.use_trusted_publishing && secrets.rubygems_api_key || '' }}
+          RUBYGEMS_HOST: ${{ inputs.use_trusted_publishing && 'https://rubygems.org' || '' }}
 
       - name: Pull latest changes after release
         run: |
