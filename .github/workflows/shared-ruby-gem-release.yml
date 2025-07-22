@@ -72,6 +72,8 @@ jobs:
         run: |
           if [ -f .gitignore ]; then
             if ! grep -q "^vendor/" .gitignore; then
+              # Ensure the file ends with a newline before appending
+              [ -s .gitignore ] && [ "$(tail -c1 .gitignore)" != "" ] && echo "" >> .gitignore
               echo "vendor/" >> .gitignore
               git add .gitignore
               git commit -m "Add vendor/ to .gitignore"
@@ -171,6 +173,8 @@ jobs:
         run: |
           if [ -f .gitignore ]; then
             if ! grep -q "^vendor/" .gitignore; then
+              # Ensure the file ends with a newline before appending
+              [ -s .gitignore ] && [ "$(tail -c1 .gitignore)" != "" ] && echo "" >> .gitignore
               echo "vendor/" >> .gitignore
               git add .gitignore
               git commit -m "Add vendor/ to .gitignore"
