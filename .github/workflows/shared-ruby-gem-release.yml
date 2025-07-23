@@ -52,6 +52,10 @@ on:
         required: false
         default: false
         type: boolean
+      oidc_role_id:
+        description: 'RubyGems OIDC role ID for trusted publishing (required when use_trusted_publishing is true)'
+        required: false
+        type: string
     secrets:
       rubygems_api_key:
         description: 'RubyGems API key for publishing'
@@ -212,6 +216,7 @@ jobs:
         with:
           audience: "https://oidc-api-token.rubygems.org"
           gem-server: "https://oidc-api-token.rubygems.org"
+          role-to-assume: ${{ inputs.oidc_role_id }}
 
       - name: Release gem to RubyGems
         run: ${{ inputs.publish_command }}
@@ -323,6 +328,7 @@ jobs:
         with:
           audience: "https://oidc-api-token.rubygems.org"
           gem-server: "https://oidc-api-token.rubygems.org"
+          role-to-assume: ${{ inputs.oidc_role_id }}
 
       - name: Get current version before release
         id: current_version
