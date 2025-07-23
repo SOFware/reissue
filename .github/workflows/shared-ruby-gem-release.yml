@@ -214,8 +214,8 @@ jobs:
         if: inputs.use_trusted_publishing
         uses: rubygems/configure-rubygems-credentials@main
         with:
-          audience: "https://oidc-api-token.rubygems.org"
-          gem-server: "https://oidc-api-token.rubygems.org"
+          audience: "https://rubygems.org"
+          gem-server: "https://rubygems.org"
           role-to-assume: ${{ inputs.oidc_role_id }}
 
       - name: Release gem to RubyGems
@@ -326,8 +326,8 @@ jobs:
         if: inputs.use_trusted_publishing
         uses: rubygems/configure-rubygems-credentials@main
         with:
-          audience: "https://oidc-api-token.rubygems.org"
-          gem-server: "https://oidc-api-token.rubygems.org"
+          audience: "https://rubygems.org"
+          gem-server: "https://rubygems.org"
           role-to-assume: ${{ inputs.oidc_role_id }}
 
       - name: Get current version before release
