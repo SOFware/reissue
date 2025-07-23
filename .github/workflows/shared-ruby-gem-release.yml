@@ -214,7 +214,7 @@ jobs:
         if: inputs.use_trusted_publishing
         uses: rubygems/configure-rubygems-credentials@main
         with:
-          audience: "https://rubygems.org"
+          audience: "rubygems.org"
           gem-server: "https://rubygems.org"
           role-to-assume: ${{ inputs.oidc_role_id }}
 
@@ -326,7 +326,7 @@ jobs:
         if: inputs.use_trusted_publishing
         uses: rubygems/configure-rubygems-credentials@main
         with:
-          audience: "https://rubygems.org"
+          audience: "rubygems.org"
           gem-server: "https://rubygems.org"
           role-to-assume: ${{ inputs.oidc_role_id }}
 
