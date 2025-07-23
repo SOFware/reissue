@@ -210,15 +210,13 @@ jobs:
         if: inputs.use_trusted_publishing
         uses: rubygems/configure-rubygems-credentials@main
         with:
-          trusted-publisher: true
-          audience: "rubygems.org"
-          gem-server: "https://rubygems.org"
+          audience: "https://oidc-api-token.rubygems.org"
+          gem-server: "https://oidc-api-token.rubygems.org"
 
       - name: Release gem to RubyGems
         run: ${{ inputs.publish_command }}
         env:
           GEM_HOST_API_KEY: ${{ !inputs.use_trusted_publishing && secrets.rubygems_api_key || '' }}
-          RUBYGEMS_HOST: ${{ inputs.use_trusted_publishing && 'https://rubygems.org' || '' }}
 
       - name: Pull latest changes after release
         run: |
@@ -323,9 +321,8 @@ jobs:
         if: inputs.use_trusted_publishing
         uses: rubygems/configure-rubygems-credentials@main
         with:
-          trusted-publisher: true
-          audience: "rubygems.org"
-          gem-server: "https://rubygems.org"
+          audience: "https://oidc-api-token.rubygems.org"
+          gem-server: "https://oidc-api-token.rubygems.org"
 
       - name: Get current version before release
         id: current_version
@@ -343,7 +340,6 @@ jobs:
         run: ${{ inputs.publish_command }}
         env:
           GEM_HOST_API_KEY: ${{ !inputs.use_trusted_publishing && secrets.rubygems_api_key || '' }}
-          RUBYGEMS_HOST: ${{ inputs.use_trusted_publishing && 'https://rubygems.org' || '' }}
 
       - name: Pull latest changes after release
         run: |
