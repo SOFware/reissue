@@ -181,7 +181,9 @@ module Reissue
         )
         finalize_message = "Finalize the changelog for version #{version} on #{date}"
         if commit_finalize
-          tasker["#{name}:branch"].invoke("reissue/#{version}") if finalize_with_branch?
+          if finalize_with_branch?
+            tasker["#{name}:branch"].invoke("reissue/#{version}")
+          end
           system("git add -u")
           system("git commit -m '#{finalize_message}'")
           tasker["#{name}:push"].invoke if push_finalize?
@@ -193,7 +195,12 @@ module Reissue
       desc "Create a new branch for the next version."
       task "#{name}:branch", [:branch_name] do |task, args|
         raise "No branch name specified" unless args[:branch_name]
-        system("git checkout -b #{args[:branch_name]}")
+        branch_name = args[:branch_name]
+        # Force create branch by deleting if exists, then creating fresh
+        if system("git show-ref --verify --quiet refs/heads/#{branch_name}")
+          system("git branch -D #{branch_name}")
+        end
+        system("git checkout -b #{branch_name}")
       end
 
       desc "Push the current branch to the remote repository."

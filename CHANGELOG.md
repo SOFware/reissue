@@ -23,3 +23,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Update reformat task to create a new changelog if it doesn't exist
+- Update the `reissue:branch` task to force create a new branch if it already exists.
