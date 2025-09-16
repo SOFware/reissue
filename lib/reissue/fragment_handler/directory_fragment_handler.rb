@@ -1,14 +1,27 @@
+# frozen_string_literal: true
+
 require "pathname"
 
 module Reissue
-  class FragmentReader
+  # Handler for reading fragments from a directory
+  class DirectoryFragmentHandler < FragmentHandler
     DEFAULT_VALID_SECTIONS = %w[added changed deprecated removed fixed security].freeze
 
-    def initialize(fragment_directory = "changelog.d", valid_sections: DEFAULT_VALID_SECTIONS)
-      @fragment_directory = Pathname.new(fragment_directory)
+    attr_reader :directory, :valid_sections
+
+    # Initialize the handler with a directory path
+    #
+    # @param directory [String] The path to the fragments directory
+    # @param valid_sections [Array<String>, nil] List of valid section names, or nil to allow all
+    def initialize(directory, valid_sections: DEFAULT_VALID_SECTIONS)
+      @directory = directory
+      @fragment_directory = Pathname.new(directory)
       @valid_sections = valid_sections
     end
 
+    # Read fragments from the directory
+    #
+    # @return [Hash] A hash of changelog entries organized by category
     def read
       return {} unless @fragment_directory.exist?
 
@@ -35,6 +48,9 @@ module Reissue
       fragments
     end
 
+    # Clear all fragment files from the directory
+    #
+    # @return [nil]
     def clear
       return unless @fragment_directory.exist?
 

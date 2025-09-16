@@ -104,13 +104,22 @@ Reissue::Task.create :reissue do |task|
   # Options: false, true (push working branch), :branch (create and push new branch)
   task.push_finalize = :branch
   
-  # Optional: Directory containing fragment files for changelog entries. Defaults to nil (disabled)
-  task.fragment_directory = "changelog_fragments"
+  # Optional: Configure fragment handling for changelog entries. Defaults to nil (disabled)
+  # Options:
+  #   - nil or false: Fragments disabled
+  #   - String path: Use directory-based fragments (e.g., "changelog_fragments")
+  #   - :git: Extract changelog entries from git commit trailers
+  task.fragment = "changelog_fragments"
+  # task.fragment = :git  # Use git trailers for changelog entries
   
   # Optional: Whether to clear fragment files after releasing. Defaults to false
-  # When true, fragments are cleared after a release
+  # When true, fragments are cleared after a release (only applies when using directory fragments)
+  # Note: Has no effect when using :git fragments
   task.clear_fragments = true
   
+  # Deprecated: Use `fragment` instead of `fragment_directory`
+  # task.fragment_directory = "changelog_fragments"  # DEPRECATED: Use task.fragment instead
+
   # Optional: Retain changelog files for previous versions. Defaults to false
   # Options: true (retain in "changelogs" directory), "path/to/archive", or a Proc
   task.retain_changelogs = true
@@ -124,6 +133,67 @@ Reissue::Task.create :reissue do |task|
   end
 end
 ```
+
+## Using Git Trailers for Changelog Entries
+
+Reissue can extract changelog entries directly from git commit messages using trailers. This keeps your changelog data close to the code changes.
+
+### Configuration
+
+```ruby
+Reissue::Task.create :reissue do |task|
+  task.version_file = "lib/my_gem/version.rb"
+  task.fragment = :git  # Enable git trailer extraction
+end
+```
+
+### Adding Trailers to Commits
+
+Use changelog section names as trailer keys in your commit messages:
+
+```bash
+git commit -m "Implement user authentication
+
+Added: User login and logout functionality
+Added: Password reset via email
+Fixed: Session timeout not working correctly
+Security: Rate limiting on login attempts"
+```
+
+### Supported Sections
+
+Git trailers use the standard Keep a Changelog sections:
+- `Added:` for new features
+- `Changed:` for changes in existing functionality
+- `Deprecated:` for soon-to-be removed features
+- `Removed:` for now removed features
+- `Fixed:` for any bug fixes
+- `Security:` for vulnerability fixes
+
+### How It Works
+
+1. When you run `rake reissue`, it finds all commits since the last version tag
+2. Extracts trailers matching changelog sections from commit messages
+3. Adds them to the appropriate sections in your CHANGELOG.md
+4. Trailers are case-insensitive (e.g., `fixed:`, `Fixed:`, `FIXED:` all work)
+
+### Example Workflow
+
+```bash
+# Make your changes
+git add .
+git commit -m "Add export functionality
+
+Added: CSV export for user data
+Added: PDF report generation
+Fixed: Date formatting in exports"
+
+# Release (trailers are automatically extracted)
+rake build:checksum
+rake release
+```
+
+The changelog will be updated with the entries from your commit trailers.
 
 ## Development
 

@@ -132,7 +132,7 @@ class TestChangelogUpdater < Minitest::Spec
         "1.0.0",
         date: "2020-01-01",
         changes: {"Added" => ["Manual feature"]},
-        fragment_directory: @fragment_dir
+        fragment: @fragment_dir
       )
 
       contents = @changelog_updater.to_s
@@ -147,7 +147,7 @@ class TestChangelogUpdater < Minitest::Spec
       @changelog_updater.update(
         "1.0.0",
         changes: {"Added" => ["New feature"]},
-        fragment_directory: @fragment_dir
+        fragment: @fragment_dir
       )
 
       contents = @changelog_updater.to_s

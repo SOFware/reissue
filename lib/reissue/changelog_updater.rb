@@ -1,6 +1,6 @@
 require_relative "parser"
 require_relative "printer"
-require_relative "fragment_reader"
+require_relative "fragment_handler"
 
 module Reissue
   # Updates the changelog file with new versions and changes.
@@ -19,9 +19,16 @@ module Reissue
     # @param changes [Hash] The changes for the version (default: {}).
     # @param changelog_file [String] The path to the changelog file (default: @changelog_file).
     # @param version_limit [Integer] The number of versions to keep (default: 2).
-    # @param fragment_directory [String] The directory containing fragment files (default: nil).
-    def call(version, date: "Unreleased", changes: {}, changelog_file: @changelog_file, version_limit: 2, retain_changelogs: false, fragment_directory: nil)
-      update(version, date:, changes:, version_limit:, fragment_directory:)
+    # @param fragment [String] The fragment source configuration (default: nil).
+    # @param fragment_directory [String] @deprecated Use fragment instead
+    def call(version, date: "Unreleased", changes: {}, changelog_file: @changelog_file, version_limit: 2, retain_changelogs: false, fragment: nil, fragment_directory: nil)
+      # Handle deprecation
+      if fragment_directory && !fragment
+        warn "[DEPRECATION] `fragment_directory` parameter is deprecated. Please use `fragment` instead."
+        fragment = fragment_directory
+      end
+
+      update(version, date:, changes:, version_limit:, fragment:)
       write(changelog_file, retain_changelogs:)
 
       changelog
@@ -48,16 +55,16 @@ module Reissue
     # @param date [String] The release date (default: "Unreleased").
     # @param changes [Hash] The changes for the version (default: {}).
     # @param version_limit [Integer] The number of versions to keep (default: 2).
-    # @param fragment_directory [String] The directory containing fragment files (default: nil).
+    # @param fragment [String] The fragment source configuration (default: nil).
     # @return [Hash] The updated changelog.
-    def update(version, date: "Unreleased", changes: {}, version_limit: 2, fragment_directory: nil)
+    def update(version, date: "Unreleased", changes: {}, version_limit: 2, fragment: nil)
       @changelog = Parser.parse(File.read(@changelog_file))
 
-      # Merge fragment changes if directory is provided
+      # Merge fragment changes if source is provided
       merged_changes = changes.dup
-      if fragment_directory
-        fragment_reader = FragmentReader.new(fragment_directory)
-        fragment_changes = fragment_reader.read
+      if fragment
+        handler = FragmentHandler.for(fragment)
+        fragment_changes = handler.read
         fragment_changes.each do |section, entries|
           merged_changes[section] ||= []
           merged_changes[section].concat(entries)

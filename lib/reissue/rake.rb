@@ -36,9 +36,24 @@ module Reissue
     # Provide a callable to decide how to store the files.
     attr_accessor :retain_changelogs
 
-    # The directory containing fragment files for changelog entries.
-    # Default: nil (disabled).
-    attr_accessor :fragment_directory
+    # The fragment configuration for changelog entries.
+    # @return [String, nil] nil (disabled) or a directory path string for fragment files
+    # @example Using directory-based fragments
+    #   task.fragment = "changelog_fragments"
+    # @note Default: nil (disabled)
+    attr_accessor :fragment
+
+    # @deprecated Use {#fragment} instead
+    def fragment_directory=(value)
+      warn "[DEPRECATION] `fragment_directory` is deprecated. Please use `fragment` instead."
+      self.fragment = value
+    end
+
+    # @deprecated Use {#fragment} instead
+    def fragment_directory
+      warn "[DEPRECATION] `fragment_directory` is deprecated. Please use `fragment` instead."
+      @fragment
+    end
 
     # Whether to clear fragment files after processing.
     # Default: false.
@@ -85,7 +100,7 @@ module Reissue
       @updated_paths = []
       @changelog_file = "CHANGELOG.md"
       @retain_changelogs = false
-      @fragment_directory = nil
+      @fragment = nil
       @clear_fragments = false
       @commit = true
       @commit_finalize = true
@@ -132,7 +147,7 @@ module Reissue
           version_file:,
           version_limit:,
           version_redo_proc:,
-          fragment_directory:
+          fragment: fragment
         )
         bundle
 
@@ -177,7 +192,7 @@ module Reissue
           date,
           changelog_file:,
           retain_changelogs:,
-          fragment_directory:
+          fragment: fragment
         )
         finalize_message = "Finalize the changelog for version #{version} on #{date}"
         if commit_finalize
@@ -218,14 +233,49 @@ module Reissue
         system("git push origin HEAD")
       end
 
+      desc "Preview changelog entries that will be added from fragments or git trailers"
+      task "#{name}:preview" do
+        if fragment
+          require_relative "fragment_handler"
+          handler = Reissue::FragmentHandler.for(fragment)
+          entries = handler.read
+
+          if entries.empty?
+            puts "No changelog entries found."
+            if fragment == :git
+              puts "  (No git trailers found since last version tag)"
+            else
+              puts "  (No fragment files found in '#{fragment}')"
+            end
+          else
+            puts "Changelog entries that will be added:\n\n"
+            # Sort sections in Keep a Changelog order
+            section_order = %w[Added Changed Deprecated Removed Fixed Security]
+            sorted_sections = entries.keys.sort_by { |k| section_order.index(k) || 999 }
+
+            sorted_sections.each do |section|
+              items = entries[section]
+              puts "### #{section}\n"
+              items.each { |item| puts "- #{item}" }
+              puts
+            end
+
+            puts "Total: #{entries.values.flatten.count} entries across #{entries.keys.count} sections"
+          end
+        else
+          puts "Fragment handling is not configured."
+          puts "Set task.fragment to a directory path or :git to enable changelog fragments."
+        end
+      end
+
       desc "Clear fragments"
       task "#{name}:clear_fragments" do
         # Clear fragments after release if configured
-        if fragment_directory && clear_fragments
-          formatter.clear_fragments(fragment_directory)
+        if fragment && clear_fragments
+          formatter.clear_fragments(fragment)
           clear_message = "Clear changelog fragments"
           if commit_clear_fragments
-            system("git add #{fragment_directory}")
+            system("git add #{fragment}")
             system("git commit -m '#{clear_message}'")
           else
             system("echo '#{clear_message}'")
