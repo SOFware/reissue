@@ -11,4 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - New version was never created after the last release.
 
-## [0.4.2] - Unreleased
+## [0.4.2] - 2025-09-16
+
+### Changed
+
+- New version was never created after the last release.
