@@ -1,0 +1,103 @@
+# Example Rakefile configuration using git trailers for changelog entries
+#
+# This example shows how to configure Reissue to extract changelog entries
+# from git commit trailers instead of using fragment files.
+#
+# Usage:
+#   1. Copy this file to your project root as 'Rakefile'
+#   2. Update the version_file path to match your project
+#   3. Start adding trailers to your commit messages
+#
+# Example commit with trailers:
+#   git commit -m "Add new feature
+#   
+#   Added: Amazing new functionality
+#   Fixed: Bug that was annoying users
+#   Changed: Updated the UI for better UX"
+
+require "bundler/gem_tasks"  # Only if this is a gem project
+require "reissue/gem"         # Use "reissue/rake" for non-gem projects
+
+Reissue::Task.create :reissue do |task|
+  # Required: Path to your version file
+  task.version_file = "lib/my_gem/version.rb"
+  
+  # Enable git trailer extraction for changelog entries
+  # This tells Reissue to look for trailers like "Added:", "Fixed:", etc.
+  # in commit messages since the last version tag
+  task.fragment = :git
+  
+  # Optional: Other configuration options
+  task.changelog_file = "CHANGELOG.md"
+  task.version_limit = 5  # Keep 5 versions in the main changelog
+  
+  # When using git trailers, clear_fragments has no effect
+  # (there are no fragment files to clear)
+  # task.clear_fragments = true  # No effect with :git
+  
+  # Optional: Automatically push release branches
+  task.push_finalize = :branch
+  task.push_reissue = :branch
+end
+
+# Additional custom tasks (optional)
+namespace :changelog do
+  desc "Preview changelog entries from git trailers"
+  task :preview do
+    require "reissue/fragment_handler"
+    require "reissue/fragment_handler/git_fragment_handler"
+    
+    handler = Reissue::FragmentHandler::GitFragmentHandler.new
+    entries = handler.read
+    
+    if entries.empty?
+      puts "No changelog entries found in git trailers since last tag."
+    else
+      puts "Changelog entries that will be added:\n\n"
+      entries.each do |section, items|
+        puts "### #{section}"
+        items.each { |item| puts "- #{item}" }
+        puts
+      end
+    end
+  end
+  
+  desc "Show example of how to add git trailers"
+  task :example do
+    puts <<~EXAMPLE
+      Git Trailer Examples for Changelog Entries
+      ===========================================
+      
+      When committing, add trailers after a blank line:
+      
+      git commit -m "Short commit message
+      
+      Added: New feature description
+      Fixed: Bug that was fixed
+      Changed: What was modified
+      Deprecated: Feature that will be removed
+      Removed: Feature that was removed
+      Security: Security fix description"
+      
+      Supported Sections:
+      - Added: for new features
+      - Changed: for changes in existing functionality  
+      - Deprecated: for soon-to-be removed features
+      - Removed: for now removed features
+      - Fixed: for any bug fixes
+      - Security: for vulnerability fixes
+      
+      Notes:
+      - Section names are case-insensitive
+      - Multiple trailers of the same type are supported
+      - Only trailers since the last version tag are included
+    EXAMPLE
+  end
+end
+
+# Example: Run tests before building the gem
+task build: :test if Rake::Task.task_defined?(:test)
+
+# Example: Ensure changelog is finalized before release
+# (This is automatic with reissue/gem, but shown for clarity)
+task "build:checksum" => "reissue:finalize" if Rake::Task.task_defined?("build:checksum")
