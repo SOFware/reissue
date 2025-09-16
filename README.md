@@ -57,6 +57,7 @@ Additional tasks (usually run automatically):
 - `rake reissue[segment]` - Bump version (major, minor, patch)
 - `rake reissue:finalize[date]` - Add release date to changelog
 - `rake reissue:reformat[version_limit]` - Clean up changelog formatting
+- `rake reissue:preview` - Preview changelog entries from fragments or git trailers
 - `rake reissue:clear_fragments` - Clear changelog fragments after release
 
 ### Non-Gem Projects
