@@ -57,7 +57,8 @@ module Reissue
           handler = Reissue::FragmentHandler::GitFragmentHandler.new
           result = handler.read
 
-          assert_equal({"Fixed" => ["Widget now flip-flops doo-dads"]}, result)
+          assert_equal 1, result["Fixed"].length
+          assert_match(/^Widget now flip-flops doo-dads \(\h{7}\)$/, result["Fixed"].first)
         end
       end
 
@@ -74,12 +75,12 @@ module Reissue
           handler = Reissue::FragmentHandler::GitFragmentHandler.new
           result = handler.read
 
-          expected = {
-            "Added" => ["New turbo mode configuration"],
-            "Changed" => ["Refactored flux capacitor"],
-            "Fixed" => ["Memory leak in quantum processor"]
-          }
-          assert_equal expected, result
+          assert_equal 1, result["Added"].length
+          assert_equal 1, result["Changed"].length
+          assert_equal 1, result["Fixed"].length
+          assert_match(/^New turbo mode configuration \(\h{7}\)$/, result["Added"].first)
+          assert_match(/^Refactored flux capacitor \(\h{7}\)$/, result["Changed"].first)
+          assert_match(/^Memory leak in quantum processor \(\h{7}\)$/, result["Fixed"].first)
         end
       end
 
@@ -100,11 +101,10 @@ module Reissue
           handler = Reissue::FragmentHandler::GitFragmentHandler.new
           result = handler.read
 
-          expected = {
-            "Fixed" => ["First bug squashed"],
-            "Added" => ["Cool new feature"]
-          }
-          assert_equal expected, result
+          assert_equal 1, result["Fixed"].length
+          assert_equal 1, result["Added"].length
+          assert_match(/^First bug squashed \(\h{7}\)$/, result["Fixed"].first)
+          assert_match(/^Cool new feature \(\h{7}\)$/, result["Added"].first)
         end
       end
 
@@ -121,12 +121,12 @@ module Reissue
           handler = Reissue::FragmentHandler::GitFragmentHandler.new
           result = handler.read
 
-          expected = {
-            "Fixed" => ["Lowercase section name"],
-            "Added" => ["Uppercase section name"],
-            "Changed" => ["Normal case section name"]
-          }
-          assert_equal expected, result
+          assert_equal 1, result["Fixed"].length
+          assert_equal 1, result["Added"].length
+          assert_equal 1, result["Changed"].length
+          assert_match(/^Lowercase section name \(\h{7}\)$/, result["Fixed"].first)
+          assert_match(/^Uppercase section name \(\h{7}\)$/, result["Added"].first)
+          assert_match(/^Normal case section name \(\h{7}\)$/, result["Changed"].first)
         end
       end
 
@@ -144,7 +144,8 @@ module Reissue
           handler = Reissue::FragmentHandler::GitFragmentHandler.new
           result = handler.read
 
-          assert_equal({"Fixed" => ["Valid trailer"]}, result)
+          assert_equal 1, result["Fixed"].length
+          assert_match(/^Valid trailer \(\h{7}\)$/, result["Fixed"].first)
         end
       end
 
@@ -175,11 +176,10 @@ module Reissue
           result = handler.read
 
           # Should only include commits after the tag
-          expected = {
-            "Fixed" => ["Important bug fix"],
-            "Added" => ["New feature after release"]
-          }
-          assert_equal expected, result
+          assert_equal 1, result["Fixed"].length
+          assert_equal 1, result["Added"].length
+          assert_match(/^Important bug fix \(\h{7}\)$/, result["Fixed"].first)
+          assert_match(/^New feature after release \(\h{7}\)$/, result["Added"].first)
         end
       end
 
@@ -208,7 +208,8 @@ module Reissue
           result = handler.read
 
           # Should only include commits after v2.0.0
-          assert_equal({"Fixed" => ["Bug after v2"]}, result)
+          assert_equal 1, result["Fixed"].length
+          assert_match(/^Bug after v2 \(\h{7}\)$/, result["Fixed"].first)
         end
       end
 
@@ -235,7 +236,8 @@ module Reissue
           handler = Reissue::FragmentHandler::GitFragmentHandler.new
           result = handler.read
 
-          assert_equal({"Security" => ["Fixed SQL injection vulnerability"]}, result)
+          assert_equal 1, result["Security"].length
+          assert_match(/^Fixed SQL injection vulnerability \(\h{7}\)$/, result["Security"].first)
         end
       end
 
@@ -251,11 +253,10 @@ module Reissue
           handler = Reissue::FragmentHandler::GitFragmentHandler.new
           result = handler.read
 
-          expected = {
-            "Deprecated" => ["Old API will be removed in v3.0"],
-            "Removed" => ["Legacy authentication system"]
-          }
-          assert_equal expected, result
+          assert_equal 1, result["Deprecated"].length
+          assert_equal 1, result["Removed"].length
+          assert_match(/^Old API will be removed in v3\.0 \(\h{7}\)$/, result["Deprecated"].first)
+          assert_match(/^Legacy authentication system \(\h{7}\)$/, result["Removed"].first)
         end
       end
 
@@ -282,10 +283,119 @@ module Reissue
           handler = Reissue::FragmentHandler::GitFragmentHandler.new
           result = handler.read
 
-          expected = {
-            "Fixed" => ["Bug one", "Bug two", "Bug three"]
-          }
-          assert_equal expected, result
+          assert_equal 3, result["Fixed"].length
+          assert_match(/^Bug one \(\h{7}\)$/, result["Fixed"][0])
+          assert_match(/^Bug two \(\h{7}\)$/, result["Fixed"][1])
+          assert_match(/^Bug three \(\h{7}\)$/, result["Fixed"][2])
+        end
+      end
+
+      def test_read_ignores_non_version_tags
+        with_test_git_repo do
+          # Create first commit with a non-version tag
+          create_commit_with_message <<~MSG
+            Old commit
+
+            Added: Should not appear in results
+          MSG
+          system("git tag release-candidate", out: File::NULL, err: File::NULL)
+
+          # Create another commit with a version tag
+          create_commit_with_message <<~MSG
+            Version release
+
+            Added: Should not appear either
+          MSG
+          system("git tag v1.0.0", out: File::NULL, err: File::NULL)
+
+          # Create commits after version tag
+          create_commit_with_message <<~MSG
+            New feature
+
+            Fixed: Should appear in results
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          result = handler.read
+
+          # Should only include commits after v1.0.0, not after release-candidate
+          assert_equal 1, result["Fixed"].length
+          assert_match(/^Should appear in results \(\h{7}\)$/, result["Fixed"].first)
+        end
+      end
+
+      def test_last_tag_returns_most_recent_version_tag
+        with_test_git_repo do
+          create_commit_with_message "First commit"
+          system("git tag v1.0.0", out: File::NULL, err: File::NULL)
+
+          sleep 0.1 # Ensure different timestamps
+
+          create_commit_with_message "Second commit"
+          system("git tag v1.1.0", out: File::NULL, err: File::NULL)
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal "v1.1.0", handler.last_tag
+        end
+      end
+
+      def test_last_tag_returns_nil_when_no_tags
+        with_test_git_repo do
+          create_commit_with_message "Commit without tag"
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_nil handler.last_tag
+        end
+      end
+
+      def test_last_tag_handles_multi_digit_version_numbers
+        with_test_git_repo do
+          create_commit_with_message "First commit"
+          system("git tag v8.26.9", out: File::NULL, err: File::NULL)
+
+          sleep 0.1 # Ensure different timestamps
+
+          create_commit_with_message "Second commit"
+          system("git tag v8.26.10", out: File::NULL, err: File::NULL)
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          # Should find v8.26.10 (not v8.26.9) despite 10 having more digits
+          assert_equal "v8.26.10", handler.last_tag
+        end
+      end
+
+      def test_read_uses_most_recently_created_tag_not_highest_version
+        with_test_git_repo do
+          # Create v9.0.0 first (higher version number)
+          create_commit_with_message "Old high version"
+          system("git tag v9.0.0", out: File::NULL, err: File::NULL)
+
+          sleep 0.1 # Ensure different timestamps
+
+          # Create v8.0.0 later (lower version number but more recent)
+          create_commit_with_message <<~MSG
+            Recent lower version
+
+            Added: Should not appear
+          MSG
+          system("git tag v8.0.0", out: File::NULL, err: File::NULL)
+
+          # Create commit after most recent tag
+          create_commit_with_message <<~MSG
+            New commit
+
+            Fixed: Should appear
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+
+          # Should use v8.0.0 (most recently created) not v9.0.0 (highest version)
+          assert_equal "v8.0.0", handler.last_tag
+
+          result = handler.read
+          assert_equal 1, result["Fixed"].length
+          assert_match(/^Should appear \(\h{7}\)$/, result["Fixed"].first)
+          assert_nil result["Added"] # Should not include commits before v8.0.0
         end
       end
 
