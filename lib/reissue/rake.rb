@@ -238,6 +238,18 @@ module Reissue
         if fragment
           require_relative "fragment_handler"
           handler = Reissue::FragmentHandler.for(fragment)
+
+          # Show comparison tag for git trailers
+          if fragment == :git && handler.respond_to?(:last_tag)
+            last_tag = handler.last_tag
+            if last_tag
+              puts "Comparing against: #{last_tag}"
+              puts "  (Run 'git fetch --tags' if this seems out of date)\n\n"
+            else
+              puts "No version tags found (comparing against all commits)\n\n"
+            end
+          end
+
           entries = handler.read
 
           if entries.empty?

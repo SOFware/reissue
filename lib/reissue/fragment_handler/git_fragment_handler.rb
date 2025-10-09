@@ -27,6 +27,14 @@ module Reissue
         nil
       end
 
+      # Get the last version tag used for comparison
+      #
+      # @return [String, nil] The most recent version tag or nil if no tags found
+      def last_tag
+        return nil unless git_available? && in_git_repo?
+        find_last_tag
+      end
+
       private
 
       def git_available?
@@ -48,17 +56,35 @@ module Reissue
           "HEAD"
         end
 
-        # Get commit messages with trailers, in reverse order (oldest first)
-        output = `git log #{commit_range} --reverse --format=%B 2>/dev/null`
+        # Get commit hash and message using format specifiers
+        # %h = short hash, %x00 = null byte separator, %B = commit body
+        output = `git log #{commit_range} --reverse --format='%h%x00%B%x00' 2>/dev/null`
         return [] if output.empty?
 
-        # Split by double newline to separate commits
-        output.split(/\n\n+/)
+        # Split by null bytes and group into pairs of (hash, message)
+        parts = output.split("\x00")
+        commits = []
+
+        # Process pairs: hash, message, (empty from double null), repeat
+        i = 0
+        while i < parts.length - 1
+          sha = parts[i].strip
+          message = parts[i + 1] || ""
+
+          if !sha.empty?
+            commits << {sha: sha, message: message}
+          end
+
+          i += 2
+        end
+
+        commits
       end
 
       def find_last_tag
-        # Try to find the most recent tag
-        tag = `git describe --tags --abbrev=0 2>/dev/null`.strip
+        # Find the most recent semantic version tag (v*.*.*) by tag creation date across all branches
+        # This ensures we exclude commits that are already in ANY tagged release, not just the current branch
+        tag = `git for-each-ref --sort=-creatordate --format='%(refname:short)' 'refs/tags/v[0-9]*.[0-9]*.[0-9]*' --count=1 2>/dev/null`.strip
         tag.empty? ? nil : tag
       end
 
@@ -66,8 +92,11 @@ module Reissue
         result = {}
 
         commits.each do |commit|
-          # Split commit into lines and look for trailers
-          commit.lines.each do |line|
+          sha = commit[:sha]
+          message = commit[:message]
+
+          # Split commit message into lines and look for trailers
+          message.lines.each do |line|
             line = line.strip
             next if line.empty?
 
@@ -76,7 +105,8 @@ module Reissue
               trailer_value = match[2].strip
 
               result[section_name] ||= []
-              result[section_name] << trailer_value
+              # Append the short SHA in parentheses
+              result[section_name] << "#{trailer_value} (#{sha})"
             end
           end
         end
