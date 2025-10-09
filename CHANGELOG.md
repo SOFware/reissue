@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.4.3] - Unreleased
 
+### Fixed
+
+- Bug handling version tags in order when generating changelog.
+
 ## [0.4.2] - 2025-09-16
 
 ### Changed
