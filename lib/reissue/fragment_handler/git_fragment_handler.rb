@@ -4,11 +4,11 @@ module Reissue
   class FragmentHandler
     # Handles reading changelog entries from git commit trailers
     class GitFragmentHandler < FragmentHandler
-      # Regex to match changelog section trailers in commit messages
-      TRAILER_REGEX = /^(Added|Changed|Deprecated|Removed|Fixed|Security):\s*(.+)$/i
-
       # Valid changelog sections that can be used as trailers
       VALID_SECTIONS = %w[Added Changed Deprecated Removed Fixed Security].freeze
+
+      # Regex to match changelog section trailers in commit messages
+      TRAILER_REGEX = /^(#{VALID_SECTIONS.join("|")}):\s*(.+)$/i
 
       # Read changelog entries from git commit trailers
       #

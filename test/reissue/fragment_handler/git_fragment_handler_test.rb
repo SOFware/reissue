@@ -329,7 +329,7 @@ module Reissue
           create_commit_with_message "First commit"
           system("git tag v1.0.0", out: File::NULL, err: File::NULL)
 
-          sleep 0.1 # Ensure different timestamps
+          sleep 1 # Ensure different timestamps (git tag creation is second-precision)
 
           create_commit_with_message "Second commit"
           system("git tag v1.1.0", out: File::NULL, err: File::NULL)
@@ -353,7 +353,7 @@ module Reissue
           create_commit_with_message "First commit"
           system("git tag v8.26.9", out: File::NULL, err: File::NULL)
 
-          sleep 0.1 # Ensure different timestamps
+          sleep 1 # Ensure different timestamps (git tag creation is second-precision)
 
           create_commit_with_message "Second commit"
           system("git tag v8.26.10", out: File::NULL, err: File::NULL)
@@ -370,7 +370,7 @@ module Reissue
           create_commit_with_message "Old high version"
           system("git tag v9.0.0", out: File::NULL, err: File::NULL)
 
-          sleep 0.1 # Ensure different timestamps
+          sleep 1 # Ensure different timestamps (git tag creation is second-precision)
 
           # Create v8.0.0 later (lower version number but more recent)
           create_commit_with_message <<~MSG
