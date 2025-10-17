@@ -54,7 +54,7 @@ module Reissue
 
         # Extract version number from tag (e.g., "v1.2.3" -> "1.2.3")
         version_string = tag.sub(/^v/, "")
-        Gem::Version.new(version_string)
+        ::Gem::Version.new(version_string)
       end
 
       private
