@@ -22,12 +22,6 @@ jobs:
     strategy:
       matrix:
         version: ["3.4"]
-    env:
-      NOTIFY_SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      NOTIFY_SLACK_NOTIFY_CHANNEL: "oss-notices"
-      NOTIFY_CURRENT_REPOSITORY_URL: "${{ github.server_url }}/${{ github.repository }}"
-      NOTIFY_TEST_RUN_ID: "${{ github.run_id }}"
-      CC_TEST_REPORTER_ID: ${{secrets.CC_TEST_REPORTER_ID}}
     steps:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
@@ -40,12 +34,36 @@ jobs:
         run: |
           # this is to fix GIT not liking owner of the checkout dir
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - name: Test
+      - name: Test with Coverage
         run: bundle exec rake
-      - uses: qltysh/qlty-action/coverage@v1
+      - name: Display Coverage Summary
+        if: always()
+        run: |
+          if [ -f coverage/.last_run.json ]; then
+            echo "## Code Coverage Summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            coverage_percent=$(jq -r '.result.line' coverage/.last_run.json)
+            echo "**Coverage:** ${coverage_percent}%" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            # Check if coverage meets minimum threshold (50%)
+            threshold=50
+            if [ "$(printf '%s\n' "$threshold" "$coverage_percent" | sort -n | head -n1)" != "$threshold" ]; then
+              echo "⚠️ Coverage (${coverage_percent}%) is below minimum threshold of ${threshold}%" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            else
+              echo "✅ Coverage meets minimum threshold of ${threshold}%" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
-          files: coverage/.resultset.json
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
 
   linter:
     name: Linter
