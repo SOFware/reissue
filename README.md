@@ -196,6 +196,92 @@ rake release
 
 The changelog will be updated with the entries from your commit trailers.
 
+### Version Bumping with Git Trailers
+
+When using git fragments (`task.fragment = :git`), you can also control version bumping through commit trailers. Add a `Version:` trailer to your commit messages to specify the type of version bump.
+
+#### Configuration
+
+The version bump feature is automatically enabled when using git fragments:
+
+```ruby
+Reissue::Task.create :reissue do |task|
+  task.version_file = "lib/my_gem/version.rb"
+  task.fragment = :git  # Enables both changelog and version trailers
+end
+```
+
+#### Version Trailer Syntax
+
+Add a `Version:` trailer to specify the bump type:
+
+```bash
+git commit -m "Add breaking API changes
+
+Added: New REST API endpoints
+Changed: Authentication now requires API keys
+Version: major"
+```
+
+Supported version bump types:
+- `Version: major` - Increments major version (1.2.3 → 2.0.0)
+- `Version: minor` - Increments minor version (1.2.3 → 1.3.0)
+- `Version: patch` - Increments patch version (1.2.3 → 1.2.4)
+
+#### Precedence Rules
+
+When multiple commits contain `Version:` trailers, the highest precedence bump is applied:
+
+**Precedence:** major > minor > patch
+
+Examples:
+- Commits with `Version: patch` and `Version: minor` → minor bump applied
+- Commits with `Version: minor` and `Version: major` → major bump applied
+- Multiple `Version: major` trailers → only one major bump applied
+
+#### Idempotency
+
+The version bump is idempotent - running `rake build` multiple times before releasing will only bump the version once:
+
+1. **First build:** Version bumped from 1.2.3 → 2.0.0 (based on `Version: major` trailer)
+2. **Second build:** Version bump skipped (already at 2.0.0)
+3. **Third build:** Version bump skipped (already at 2.0.0)
+4. **After release:** Patch bump to 2.0.1 (standard post-release behavior)
+
+This is achieved by comparing the current version in your version file with the last git tag version. If they differ, the version was already bumped and the bump is skipped.
+
+#### Example Workflow
+
+```bash
+# Make changes with a major version bump
+git commit -m "Redesign authentication system
+
+Changed: Complete overhaul of auth architecture
+Removed: Support for legacy OAuth 1.0
+Added: OAuth 2.0 and JWT support
+Version: major"
+
+# Build (version bumps from 1.2.3 → 2.0.0)
+rake build:checksum
+
+# Build again (version bump skipped - already at 2.0.0)
+rake build:checksum
+
+# Release (creates v2.0.0 tag and bumps to 2.0.1)
+rake release
+```
+
+#### Case Insensitivity
+
+Version trailers are case-insensitive:
+- `Version: major`, `version: major`, `VERSION: MAJOR` all work
+
+#### When to Use Version Trailers
+
+- **Breaking changes:** Use `Version: major` for incompatible API changes
+- **New features:** Use `Version: minor` for backwards-compatible new functionality
+- **Bug fixes:** Use `Version: patch` for backwards-compatible bug fixes (or omit - patch is the default post-release bump)
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt.
