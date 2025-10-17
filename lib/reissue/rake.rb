@@ -294,6 +294,46 @@ module Reissue
           end
         end
       end
+
+      desc "Bump version based on git trailers"
+      task "#{name}:version_bump_from_trailers" do
+        # Only check for version trailers when using git fragments
+        next unless fragment == :git
+
+        require_relative "fragment_handler"
+        require_relative "version_updater"
+
+        handler = Reissue::FragmentHandler.for(:git)
+
+        # Get current version from version file
+        version_content = File.read(version_file)
+        current_version = Gem::Version.new(version_content.match(Reissue::VersionUpdater::VERSION_MATCH)[0])
+
+        # Get version from last git tag
+        tag_version = handler.last_tag_version
+
+        # Only bump if current version matches tag version (hasn't been bumped yet)
+        if tag_version && current_version == tag_version
+          bump = handler.read_version_bump
+
+          if bump
+            updater = Reissue::VersionUpdater.new(version_file, version_redo_proc: version_redo_proc)
+            updater.call(bump)
+            puts "Version bumped (#{bump}) to #{updater.instance_variable_get(:@new_version)}"
+          end
+        elsif tag_version && current_version != tag_version
+          puts "Version already bumped (#{tag_version} → #{current_version}), skipping"
+        else
+          # No tag exists, check for version trailers anyway
+          bump = handler.read_version_bump
+
+          if bump
+            updater = Reissue::VersionUpdater.new(version_file, version_redo_proc: version_redo_proc)
+            updater.call(bump)
+            puts "Version bumped (#{bump}) to #{updater.instance_variable_get(:@new_version)}"
+          end
+        end
+      end
     end
   end
 end
