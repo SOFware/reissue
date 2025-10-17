@@ -296,7 +296,7 @@ module Reissue
       end
 
       desc "Bump version based on git trailers"
-      task "#{name}:version_bump_from_trailers" do
+      task "#{name}:bump" do
         # Only check for version trailers when using git fragments
         next unless fragment == :git
 
@@ -307,7 +307,7 @@ module Reissue
 
         # Get current version from version file
         version_content = File.read(version_file)
-        current_version = Gem::Version.new(version_content.match(Reissue::VersionUpdater::VERSION_MATCH)[0])
+        current_version = ::Gem::Version.new(version_content.match(Reissue::VersionUpdater::VERSION_MATCH)[0])
 
         # Get version from last git tag
         tag_version = handler.last_tag_version
