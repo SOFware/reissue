@@ -17,7 +17,7 @@ class TestRakeVersionBumpTask < Minitest::Test
     Rake.application.clear
   end
 
-  def test_version_bump_from_trailers_with_major_trailer
+  def test_bump_with_major_trailer
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         setup_git_repo_with_version("1.2.3")
@@ -32,7 +32,7 @@ class TestRakeVersionBumpTask < Minitest::Test
         output = StringIO.new
         $stdout = output
 
-        Rake::Task["reissue:version_bump_from_trailers"].invoke
+        Rake::Task["reissue:bump"].invoke
 
         result = output.string
         version_content = File.read("version.rb")
@@ -44,7 +44,7 @@ class TestRakeVersionBumpTask < Minitest::Test
     end
   end
 
-  def test_version_bump_from_trailers_with_minor_trailer
+  def test_bump_with_minor_trailer
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         setup_git_repo_with_version("1.2.3")
@@ -58,7 +58,7 @@ class TestRakeVersionBumpTask < Minitest::Test
         output = StringIO.new
         $stdout = output
 
-        Rake::Task["reissue:version_bump_from_trailers"].invoke
+        Rake::Task["reissue:bump"].invoke
 
         result = output.string
         version_content = File.read("version.rb")
@@ -70,7 +70,7 @@ class TestRakeVersionBumpTask < Minitest::Test
     end
   end
 
-  def test_version_bump_from_trailers_with_patch_trailer
+  def test_bump_with_patch_trailer
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         setup_git_repo_with_version("1.2.3")
@@ -84,7 +84,7 @@ class TestRakeVersionBumpTask < Minitest::Test
         output = StringIO.new
         $stdout = output
 
-        Rake::Task["reissue:version_bump_from_trailers"].invoke
+        Rake::Task["reissue:bump"].invoke
 
         result = output.string
         version_content = File.read("version.rb")
@@ -96,7 +96,7 @@ class TestRakeVersionBumpTask < Minitest::Test
     end
   end
 
-  def test_version_bump_from_trailers_with_no_version_trailers
+  def test_bump_with_no_version_trailers
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         setup_git_repo_with_version("1.2.3")
@@ -110,7 +110,7 @@ class TestRakeVersionBumpTask < Minitest::Test
         output = StringIO.new
         $stdout = output
 
-        Rake::Task["reissue:version_bump_from_trailers"].invoke
+        Rake::Task["reissue:bump"].invoke
 
         result = output.string
         version_content = File.read("version.rb")
@@ -137,7 +137,7 @@ class TestRakeVersionBumpTask < Minitest::Test
         output = StringIO.new
         $stdout = output
 
-        Rake::Task["reissue:version_bump_from_trailers"].invoke
+        Rake::Task["reissue:bump"].invoke
 
         version_content = File.read("version.rb")
 
@@ -161,7 +161,7 @@ class TestRakeVersionBumpTask < Minitest::Test
         # First invocation - should bump
         output1 = StringIO.new
         $stdout = output1
-        Rake::Task["reissue:version_bump_from_trailers"].invoke
+        Rake::Task["reissue:bump"].invoke
         result1 = output1.string
 
         assert_match(/Version bumped \(major\) to 2\.0\.0/, result1)
@@ -175,7 +175,7 @@ class TestRakeVersionBumpTask < Minitest::Test
         # Second invocation - should skip
         output2 = StringIO.new
         $stdout = output2
-        Rake::Task["reissue:version_bump_from_trailers"].invoke
+        Rake::Task["reissue:bump"].invoke
         result2 = output2.string
 
         version_content = File.read("version.rb")
@@ -203,7 +203,7 @@ class TestRakeVersionBumpTask < Minitest::Test
         output = StringIO.new
         $stdout = output
 
-        Rake::Task["reissue:version_bump_from_trailers"].invoke
+        Rake::Task["reissue:bump"].invoke
 
         version_content = File.read("version.rb")
 
@@ -235,7 +235,7 @@ class TestRakeVersionBumpTask < Minitest::Test
         output = StringIO.new
         $stdout = output
 
-        Rake::Task["reissue:version_bump_from_trailers"].invoke
+        Rake::Task["reissue:bump"].invoke
 
         version_content = File.read("version.rb")
 
