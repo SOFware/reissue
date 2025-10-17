@@ -425,6 +425,298 @@ module Reissue
           system("git commit -F #{f.path}", out: File::NULL, err: File::NULL)
         end
       end
+
+      # Tests for read_version_bump method
+      def test_read_version_bump_returns_major_for_major_trailer
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Breaking change
+
+            Version: major
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal :major, handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_returns_minor_for_minor_trailer
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            New feature
+
+            Version: minor
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal :minor, handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_returns_patch_for_patch_trailer
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Bug fix
+
+            Version: patch
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal :patch, handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_returns_nil_when_no_version_trailers
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Regular commit
+
+            Fixed: Some bug
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_nil handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_precedence_major_over_minor
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            First commit
+
+            Version: minor
+          MSG
+
+          create_commit_with_message <<~MSG
+            Second commit
+
+            Version: major
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal :major, handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_precedence_major_over_patch
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            First commit
+
+            Version: patch
+          MSG
+
+          create_commit_with_message <<~MSG
+            Second commit
+
+            Version: major
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal :major, handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_precedence_minor_over_patch
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            First commit
+
+            Version: patch
+          MSG
+
+          create_commit_with_message <<~MSG
+            Second commit
+
+            Version: minor
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal :minor, handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_deduplicates_multiple_major_trailers
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            First major
+
+            Version: major
+          MSG
+
+          create_commit_with_message <<~MSG
+            Second major
+
+            Version: major
+          MSG
+
+          create_commit_with_message <<~MSG
+            Third major
+
+            Version: major
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal :major, handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_handles_case_insensitive_trailers
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Lowercase version
+
+            version: major
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal :major, handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_handles_uppercase_trailers
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Uppercase version
+
+            VERSION: minor
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal :minor, handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_ignores_invalid_version_values
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Invalid version
+
+            Version: huge
+            Version: minor
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal :minor, handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_works_when_no_tags_exist
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Initial commit
+
+            Version: major
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal :major, handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_returns_nil_when_no_commits
+        with_test_git_repo do
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_nil handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_only_checks_commits_since_last_tag
+        with_test_git_repo do
+          # Create first commit with version trailer and tag it
+          create_commit_with_message <<~MSG
+            Old commit
+
+            Version: major
+          MSG
+          system("git tag v1.0.0", out: File::NULL, err: File::NULL)
+
+          # Create new commit with different version trailer
+          create_commit_with_message <<~MSG
+            New commit
+
+            Version: minor
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          # Should return minor, not major (since major is before the tag)
+          assert_equal :minor, handler.read_version_bump
+        end
+      end
+
+      def test_read_version_bump_works_with_changelog_trailers
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Feature and version
+
+            Version: major
+            Added: New feature
+            Fixed: Bug fix
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal :major, handler.read_version_bump
+
+          # Verify changelog trailers still work
+          result = handler.read
+          assert_equal 1, result["Added"].length
+          assert_equal 1, result["Fixed"].length
+        end
+      end
+
+      # Tests for last_tag_version method
+      def test_last_tag_version_returns_gem_version_from_tag
+        with_test_git_repo do
+          create_commit_with_message "First commit"
+          system("git tag v1.2.3", out: File::NULL, err: File::NULL)
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          version = handler.last_tag_version
+
+          assert_instance_of Gem::Version, version
+          assert_equal "1.2.3", version.to_s
+        end
+      end
+
+      def test_last_tag_version_handles_tag_without_v_prefix
+        with_test_git_repo do
+          create_commit_with_message "First commit"
+          system("git tag 2.3.4", out: File::NULL, err: File::NULL)
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          version = handler.last_tag_version
+
+          assert_instance_of Gem::Version, version
+          assert_equal "2.3.4", version.to_s
+        end
+      end
+
+      def test_last_tag_version_returns_nil_when_no_tags
+        with_test_git_repo do
+          create_commit_with_message "Commit without tag"
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_nil handler.last_tag_version
+        end
+      end
+
+      def test_last_tag_version_returns_most_recent_by_date
+        with_test_git_repo do
+          create_commit_with_message "First commit"
+          system("git tag v2.0.0", out: File::NULL, err: File::NULL)
+
+          sleep 1 # Ensure different timestamps
+
+          create_commit_with_message "Second commit"
+          system("git tag v1.5.0", out: File::NULL, err: File::NULL)
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          version = handler.last_tag_version
+
+          # Should return v1.5.0 (most recent by date) not v2.0.0 (highest version)
+          assert_equal "1.5.0", version.to_s
+        end
+      end
     end
   end
 end

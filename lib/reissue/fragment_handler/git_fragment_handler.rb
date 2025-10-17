@@ -35,6 +35,28 @@ module Reissue
         find_last_tag
       end
 
+      # Read version bump from git commit trailers
+      #
+      # @return [Symbol, nil] One of :major, :minor, :patch, or nil if none found
+      def read_version_bump
+        return nil unless git_available? && in_git_repo?
+
+        commits = commits_since_last_tag
+        parse_version_bump_from_commits(commits)
+      end
+
+      # Get the version from the last git tag
+      #
+      # @return [Gem::Version, nil] The version from the last tag, or nil if no tags exist
+      def last_tag_version
+        tag = last_tag
+        return nil unless tag
+
+        # Extract version number from tag (e.g., "v1.2.3" -> "1.2.3")
+        version_string = tag.sub(/^v/, "")
+        Gem::Version.new(version_string)
+      end
+
       private
 
       def git_available?
@@ -117,6 +139,39 @@ module Reissue
       def normalize_section_name(name)
         # Normalize to proper case (e.g., "FIXED" -> "Fixed", "added" -> "Added")
         name.capitalize
+      end
+
+      def parse_version_bump_from_commits(commits)
+        # Precedence order (major > minor > patch)
+        precedence = {major: 3, minor: 2, patch: 1}
+
+        # Regex to match version trailers
+        version_regex = /^version:\s*(major|minor|patch)\s*$/i
+
+        highest_bump = nil
+        highest_precedence = 0
+
+        commits.each do |commit|
+          message = commit[:message]
+
+          # Split commit message into lines and look for version trailers
+          message.lines.each do |line|
+            line = line.strip
+            next if line.empty?
+
+            if (match = line.match(version_regex))
+              bump_value = match[1].downcase.to_sym
+
+              # Check if this bump has higher precedence
+              if precedence[bump_value] && precedence[bump_value] > highest_precedence
+                highest_bump = bump_value
+                highest_precedence = precedence[bump_value]
+              end
+            end
+          end
+        end
+
+        highest_bump
       end
     end
   end
