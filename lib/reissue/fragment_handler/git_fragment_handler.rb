@@ -103,10 +103,13 @@ module Reissue
         commits
       end
 
+      # Find the most recent semantic version tag (v*.*.*) by tag creation date across all branches
+      # This ensures we exclude commits that are already in ANY tagged release, not just the current branch
+      # Supports both numeric (v1.2.3) and alphanumeric (v2025.10.C) version tags
+      #
+      # @return [String, nil] The most recent version tag or nil if no tags found
       def find_last_tag
-        # Find the most recent semantic version tag (v*.*.*) by tag creation date across all branches
-        # This ensures we exclude commits that are already in ANY tagged release, not just the current branch
-        tag = `git for-each-ref --sort=-creatordate --format='%(refname:short)' 'refs/tags/v[0-9]*.[0-9]*.[0-9]*' --count=1 2>/dev/null`.strip
+        tag = `git for-each-ref --sort=-creatordate --format='%(refname:short)' 'refs/tags/v[0-9]*.[0-9]*.[a-zA-Z0-9]*' --count=1 2>/dev/null`.strip
         tag.empty? ? nil : tag
       end
 

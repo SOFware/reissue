@@ -705,16 +705,128 @@ module Reissue
           create_commit_with_message "First commit"
           system("git tag v2.0.0", out: File::NULL, err: File::NULL)
 
-          sleep 1 # Ensure different timestamps
-
           create_commit_with_message "Second commit"
           system("git tag v1.5.0", out: File::NULL, err: File::NULL)
 
           handler = Reissue::FragmentHandler::GitFragmentHandler.new
           version = handler.last_tag_version
-
-          # Should return v1.5.0 (most recent by date) not v2.0.0 (highest version)
           assert_equal "1.5.0", version.to_s
+        end
+      end
+
+      def test_read_handles_alphanumeric_version_tags
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Initial release
+
+            Added: Initial functionality
+          MSG
+          system("git tag v2025.10.A", out: File::NULL, err: File::NULL)
+
+          create_commit_with_message <<~MSG
+            Bug fix
+
+            Fixed: Important bug fix
+          MSG
+
+          create_commit_with_message <<~MSG
+            New feature
+
+            Added: New feature after release
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          result = handler.read
+
+          assert_equal 1, result["Fixed"].length
+          assert_equal 1, result["Added"].length
+          assert_match(/^Important bug fix \(\h{7}\)$/, result["Fixed"].first)
+          assert_match(/^New feature after release \(\h{7}\)$/, result["Added"].first)
+        end
+      end
+
+      def test_last_tag_finds_alphanumeric_version_tags
+        with_test_git_repo do
+          create_commit_with_message "First commit"
+          system("git tag v2025.10.A", out: File::NULL, err: File::NULL)
+
+          create_commit_with_message "Second commit"
+          system("git tag v2025.10.B", out: File::NULL, err: File::NULL)
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal "v2025.10.B", handler.last_tag
+        end
+      end
+
+      def test_read_handles_multiple_alphanumeric_tags
+        with_test_git_repo do
+          create_commit_with_message "Initial commit"
+          system("git tag v2025.9.Z", out: File::NULL, err: File::NULL)
+
+          create_commit_with_message <<~MSG
+            Second release
+
+            Added: Feature in v2025.10.A
+          MSG
+          system("git tag v2025.10.A", out: File::NULL, err: File::NULL)
+
+          create_commit_with_message <<~MSG
+            Post-release fix
+
+            Fixed: Bug after v2025.10.A
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          result = handler.read
+
+          assert_equal 1, result["Fixed"].length
+          assert_match(/^Bug after v2025\.10\.A \(\h{7}\)$/, result["Fixed"].first)
+        end
+      end
+
+      def test_last_tag_handles_mixed_numeric_and_alphanumeric_tags
+        with_test_git_repo do
+          create_commit_with_message "Numeric version"
+          system("git tag v1.0.0", out: File::NULL, err: File::NULL)
+
+          create_commit_with_message "Alphanumeric version"
+          system("git tag v2025.10.C", out: File::NULL, err: File::NULL)
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal "v2025.10.C", handler.last_tag
+        end
+      end
+
+      def test_read_version_bump_works_with_alphanumeric_tags
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Old commit
+
+            Version: major
+          MSG
+          system("git tag v2025.10.A", out: File::NULL, err: File::NULL)
+
+          create_commit_with_message <<~MSG
+            New commit
+
+            Version: minor
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          assert_equal :minor, handler.read_version_bump
+        end
+      end
+
+      def test_last_tag_version_handles_alphanumeric_tags
+        with_test_git_repo do
+          create_commit_with_message "First commit"
+          system("git tag v2025.10.C", out: File::NULL, err: File::NULL)
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          version = handler.last_tag_version
+
+          assert_instance_of Gem::Version, version
+          assert_equal "2025.10.C", version.to_s
         end
       end
     end
