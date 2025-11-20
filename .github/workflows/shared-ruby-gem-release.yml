@@ -3,393 +3,110 @@ name: Shared Ruby Gem Release
 on:
   workflow_call:
     inputs:
-      ruby_version:
-        description: 'Ruby version to use'
-        required: false
-        default: 'ruby'
-        type: string
       gem_name:
-        description: 'Name of the gem (for version detection)'
+        description: 'Name of the gem (e.g., reissue, discharger)'
         required: true
         type: string
-      version_file_path:
-        description: 'Path to version.rb file'
-        required: false
-        default: 'lib/{gem_name}/version.rb'
+      module_name:
+        description: 'Module name for version constant (e.g., Reissue, Discharger)'
+        required: true
         type: string
       git_user_email:
         description: 'Git user email for commits'
         required: false
-        default: 'github-actions[bot]@users.noreply.github.com'
         type: string
+        default: 'github-actions[bot]@users.noreply.github.com'
       git_user_name:
         description: 'Git user name for commits'
         required: false
+        type: string
         default: 'github-actions[bot]'
-        type: string
-      release_command:
-        description: 'Command to finalize release (e.g., bundle exec rake build:checksum)'
-        required: false
-        default: 'bundle exec rake build:checksum'
-        type: string
-      publish_command:
-        description: 'Command to publish gem (e.g., bundle exec rake release)'
-        required: false
-        default: 'bundle exec rake release'
-        type: string
-      auto_merge:
-        description: 'Automatically merge the release PR if checks pass'
-        required: false
-        default: false
-        type: boolean
-      manual_release:
-        description: 'Manually release an already-finalized version (skips prepare, goes straight to publish)'
-        required: false
-        default: false
-        type: boolean
-      use_trusted_publishing:
-        description: 'Use GitHub OIDC trusted publishing instead of API key'
-        required: false
-        default: false
-        type: boolean
-      oidc_role_id:
-        description: 'RubyGems OIDC role ID for trusted publishing (required when use_trusted_publishing is true)'
+      version_bump_branch_prefix:
+        description: 'Branch prefix for version bump PRs (e.g., reissue/ creates reissue/X.Y.Z)'
         required: false
         type: string
-    secrets:
-      rubygems_api_key:
-        description: 'RubyGems API key for publishing'
-        required: false
+        default: 'reissue/'
 
 jobs:
-  prepare-release:
-    name: Prepare release
+  release:
+    name: Release gem to RubyGems.org
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' && !inputs.manual_release
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - name: Setup Git
-        run: |
-          git config --global user.email "${{ inputs.git_user_email }}"
-          git config --global user.name "${{ inputs.git_user_name }}"
-      
-      - name: Ensure vendor directory is ignored
-        run: |
-          if [ -f .gitignore ]; then
-            if ! grep -q "^vendor/" .gitignore; then
-              # Ensure the file ends with a newline before appending
-              [ -s .gitignore ] && [ "$(tail -c1 .gitignore)" != "" ] && echo "" >> .gitignore
-              echo "vendor/" >> .gitignore
-              git add .gitignore
-              git commit -m "Add vendor/ to .gitignore"
-            fi
-          else
-            echo "vendor/" > .gitignore
-            git add .gitignore
-            git commit -m "Add vendor/ to .gitignore"
-          fi
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-          ruby-version: ${{ inputs.ruby_version }}
-
-      - name: Get current version
-        id: current_version
-        run: |
-          version_file="${{ inputs.version_file_path }}"
-          version_file="${version_file//\{gem_name\}/${{ inputs.gem_name }}}"
-          
-          # Extract module/class name and version
-          module_name=$(echo "${{ inputs.gem_name }}" | sed 's/-/::/g' | sed 's/_\([a-z]\)/\u\1/g' | sed 's/^./\u&/' | sed 's/::\([a-z]\)/::\u\1/g')
-          current_version=$(ruby -r ./$version_file -e "puts ${module_name}::VERSION")
-          
-          echo "current_version=$current_version" >> $GITHUB_OUTPUT
-
-      - name: Build and finalize release
-        run: ${{ inputs.release_command }}
-      
-      - name: Create Pull Request
-        id: create_pr
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: release/v${{ steps.current_version.outputs.current_version }}
-          base: main
-          title: "Release v${{ steps.current_version.outputs.current_version }}"
-          body: |
-            ## 🚀 Release Preparation
-            
-            This PR finalizes the release for version ${{ steps.current_version.outputs.current_version }}.
-            
-            ### Changes Made
-            - ✅ CHANGELOG.md finalized with release date
-            - ✅ Gem built successfully
-            - ✅ Release branch created
-            
-            ### Next Steps
-            1. Review the changelog to ensure all changes are documented
-            2. Verify the version is correct
-            3. Add the `approved-release` label to this PR
-            4. Merge the PR
-
-            Once merged:
-            - The release workflow will automatically publish to RubyGems.org
-            - A new version will be created
-            - The changelog will be prepared for the next release
-            
-            ---
-            
-            ⚠️ **Important**: Only add the `approved-release` label when ready to publish!
-          labels: |
-            release
-            automated
-
-      - name: Auto-merge if requested
-        if: inputs.auto_merge == true && steps.create_pr.outputs.pull-request-number
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr merge ${{ steps.create_pr.outputs.pull-request-number }} --auto --squash
-          gh pr edit ${{ steps.create_pr.outputs.pull-request-number }} --add-label approved-release
-
-  publish-gem:
-    name: Publish gem and bump version
-    runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'pull_request' && 
-      github.event.pull_request.merged == true && 
-      contains(github.event.pull_request.labels.*.name, 'approved-release')
 
     permissions:
-      id-token: write
+      id-token: write  # Required for Trusted Publishing
       contents: write
       pull-requests: write
       issues: write
 
     steps:
+      # Set up
       - name: Setup Git
         run: |
           git config --global user.email "${{ inputs.git_user_email }}"
           git config --global user.name "${{ inputs.git_user_name }}"
-      
-      - name: Ensure vendor directory is ignored
-        run: |
-          if [ -f .gitignore ]; then
-            if ! grep -q "^vendor/" .gitignore; then
-              # Ensure the file ends with a newline before appending
-              [ -s .gitignore ] && [ "$(tail -c1 .gitignore)" != "" ] && echo "" >> .gitignore
-              echo "vendor/" >> .gitignore
-              git add .gitignore
-              git commit -m "Add vendor/ to .gitignore"
-            fi
-          else
-            echo "vendor/" > .gitignore
-            git add .gitignore
-            git commit -m "Add vendor/ to .gitignore"
-          fi
-
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
           fetch-depth: 0
-
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-          ruby-version: ${{ inputs.ruby_version }}
 
-      - name: Configure RubyGems credentials
-        if: inputs.use_trusted_publishing
-        uses: rubygems/configure-rubygems-credentials@main
-        with:
-          audience: "rubygems.org"
-          gem-server: "https://rubygems.org"
-          role-to-assume: ${{ inputs.oidc_role_id }}
-
-      - name: Release gem to RubyGems
-        run: ${{ inputs.publish_command }}
-        env:
-          GEM_HOST_API_KEY: ${{ !inputs.use_trusted_publishing && secrets.rubygems_api_key || '' }}
-
-      - name: Pull latest changes after release
+      # Configure bundler for modifications
+      - name: Configure Bundler
         run: |
-          git pull origin main
+          bundle config set frozen false
 
-      - name: Check if version was bumped by reissue
-        id: check_bump
-        run: |
-          # Get the latest commit message
-          latest_commit=$(git log -1 --pretty=format:"%s")
-          echo "latest_commit=$latest_commit"
+      # Finalize changelog and build gem with checksum
+      - name: Finalize and build gem with checksum
+        run: bundle exec rake build:checksum
 
-          # Check if reissue created a version bump commit
-          if [[ "$latest_commit" == *"Bump version to"* ]]; then
-            echo "version_bumped=true" >> $GITHUB_OUTPUT
-            # Extract version from commit message
-            new_version=$(echo "$latest_commit" | grep -o "Bump version to [0-9]\+\.[0-9]\+\.[0-9]\+" | sed 's/Bump version to //')
-            echo "new_version=$new_version" >> $GITHUB_OUTPUT
-          else
-            echo "version_bumped=false" >> $GITHUB_OUTPUT
-            # Fallback to reading from version file
-            version_file="${{ inputs.version_file_path }}"
-            version_file="${version_file//\{gem_name\}/${{ inputs.gem_name }}}"
-            module_name=$(echo "${{ inputs.gem_name }}" | sed 's/-/::/g' | sed 's/_\([a-z]\)/\u\1/g' | sed 's/^./\u&/' | sed 's/::\([a-z]\)/::\u\1/g')
-            new_version=$(ruby -r ./$version_file -e "puts ${module_name}::VERSION")
-            echo "new_version=$new_version" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create Pull Request for next version
-        if: steps.check_bump.outputs.version_bumped == 'true'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: bump-version-${{ steps.check_bump.outputs.new_version }}
-          base: main
-          commit-message: "Post-release: Version bump to ${{ steps.check_bump.outputs.new_version }}"
-          title: "Bump version to ${{ steps.check_bump.outputs.new_version }}"
-          body: |
-            ## 🔄 Post-Release Version Bump
-
-            This PR includes the automatic version bump created by reissue after publishing version ${{ steps.check_bump.outputs.new_version }}.
-
-            ### Changes Made
-            - ✅ Version bumped to ${{ steps.check_bump.outputs.new_version }}
-            - ✅ CHANGELOG.md prepared with new Unreleased section
-            - ✅ Gemfile.lock updated with new version
-            - ✅ All dependencies resolved via bundle install
-
-            ### Next Steps
-            1. Review the version bump
-            2. Merge this PR to continue development
-
-            All future commits will be tracked under version ${{ steps.check_bump.outputs.new_version }}.
-          labels: |
-            dependencies
-            automated
-
-  manual-release:
-    name: Manual Release
-    runs-on: ubuntu-latest
-    if: inputs.manual_release
-    permissions:
-      id-token: write
-      contents: write
-      issues: write
-      pull-requests: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Git
-        run: |
-          git config --global user.email "${{ inputs.git_user_email }}"
-          git config --global user.name "${{ inputs.git_user_name }}"
-
-      - name: Ensure vendor directory is ignored
-        run: |
-          if [ -f .gitignore ]; then
-            if ! grep -q "^vendor/" .gitignore; then
-              # Ensure the file ends with a newline before appending
-              [ -s .gitignore ] && [ "$(tail -c1 .gitignore)" != "" ] && echo "" >> .gitignore
-              echo "vendor/" >> .gitignore
-              git add .gitignore
-              git commit -m "Add vendor/ to .gitignore"
-            fi
-          else
-            echo "vendor/" > .gitignore
-            git add .gitignore
-            git commit -m "Add vendor/ to .gitignore"
-          fi
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-          ruby-version: ${{ inputs.ruby_version }}
-
-      - name: Configure RubyGems credentials
-        if: inputs.use_trusted_publishing
-        uses: rubygems/configure-rubygems-credentials@main
-        with:
-          audience: "rubygems.org"
-          gem-server: "https://rubygems.org"
-          role-to-assume: ${{ inputs.oidc_role_id }}
-
-      - name: Get current version before release
+      # Get current version before release
+      - name: Get current version
         id: current_version
         run: |
-          version_file="${{ inputs.version_file_path }}"
-          version_file="${version_file//\{gem_name\}/${{ inputs.gem_name }}}"
-          
-          # Extract module/class name and version
-          module_name=$(echo "${{ inputs.gem_name }}" | sed 's/-/::/g' | sed 's/_\([a-z]\)/\u\1/g' | sed 's/^./\u&/' | sed 's/::\([a-z]\)/::\u\1/g')
-          current_version=$(ruby -r ./$version_file -e "puts ${module_name}::VERSION")
-          
+          current_version=$(ruby -r ./lib/${{ inputs.gem_name }}/version.rb -e 'puts ${{ inputs.module_name }}::VERSION')
           echo "current_version=$current_version" >> $GITHUB_OUTPUT
 
-      - name: Release gem to RubyGems
-        run: ${{ inputs.publish_command }}
-        env:
-          GEM_HOST_API_KEY: ${{ !inputs.use_trusted_publishing && secrets.rubygems_api_key || '' }}
-
-      - name: Pull latest changes after release
+      # Commit finalization changes if any exist
+      - name: Commit finalization changes if needed
         run: |
-          git pull origin main
-
-      - name: Check if version was bumped by reissue
-        id: check_bump
-        run: |
-          # Get the latest commit message
-          latest_commit=$(git log -1 --pretty=format:"%s")
-          echo "latest_commit=$latest_commit"
-
-          # Check if reissue created a version bump commit
-          if [[ "$latest_commit" == *"Bump version to"* ]]; then
-            echo "version_bumped=true" >> $GITHUB_OUTPUT
-            # Extract version from commit message
-            new_version=$(echo "$latest_commit" | grep -o "Bump version to [0-9]\+\.[0-9]\+\.[0-9]\+" | sed 's/Bump version to //')
-            echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Finalize version ${{ steps.current_version.outputs.current_version }} for release"
+            echo "Changes committed for finalization"
           else
-            echo "version_bumped=false" >> $GITHUB_OUTPUT
-            # Fallback to reading from version file
-            version_file="${{ inputs.version_file_path }}"
-            version_file="${version_file//\{gem_name\}/${{ inputs.gem_name }}}"
-            module_name=$(echo "${{ inputs.gem_name }}" | sed 's/-/::/g' | sed 's/_\([a-z]\)/\u\1/g' | sed 's/^./\u&/' | sed 's/::\([a-z]\)/::\u\1/g')
-            new_version=$(ruby -r ./$version_file -e "puts ${module_name}::VERSION")
-            echo "new_version=$new_version" >> $GITHUB_OUTPUT
+            echo "No changes to commit - changelog already finalized"
           fi
 
+      # Release gem using official RubyGems action
+      - name: Release gem to RubyGems
+        uses: rubygems/release-gem@v1
+
+      # Get the new version after automatic bump
+      - name: Get new version
+        id: new_version
+        run: |
+          new_version=$(ruby -r ./lib/${{ inputs.gem_name }}/version.rb -e 'puts ${{ inputs.module_name }}::VERSION')
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
+      # Create PR for next version
       - name: Create Pull Request for next version
-        if: steps.check_bump.outputs.version_bumped == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: bump-version-${{ steps.check_bump.outputs.new_version }}
+          branch: ${{ inputs.version_bump_branch_prefix }}${{ steps.new_version.outputs.new_version }}
           base: main
-          commit-message: "Post-release: Version bump to ${{ steps.check_bump.outputs.new_version }}"
-          title: "Bump version to ${{ steps.check_bump.outputs.new_version }}"
+          commit-message: "Bump version to ${{ steps.new_version.outputs.new_version }}"
+          title: "Bump version to ${{ steps.new_version.outputs.new_version }}"
           body: |
             ## 🔄 Post-Release Version Bump
 
-            This PR includes the automatic version bump created by reissue after manually releasing version ${{ steps.current_version.outputs.current_version }}.
+            This PR prepares the codebase for development of version ${{ steps.new_version.outputs.new_version }}.
 
             ### Changes Made
-            - ✅ Version bumped to ${{ steps.check_bump.outputs.new_version }}
+            - ✅ Version bumped to ${{ steps.new_version.outputs.new_version }}
             - ✅ CHANGELOG.md prepared with new Unreleased section
             - ✅ Gemfile.lock updated with new version
             - ✅ All dependencies resolved via bundle install
@@ -398,7 +115,7 @@ jobs:
             1. Review the version bump
             2. Merge this PR to continue development
 
-            All future commits will be tracked under version ${{ steps.check_bump.outputs.new_version }}.
+            All future commits will be tracked under version ${{ steps.new_version.outputs.new_version }}.
           labels: |
             dependencies
             automated
