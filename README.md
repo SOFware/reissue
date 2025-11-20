@@ -286,6 +286,18 @@ Version trailers are case-insensitive:
 
 After checking out the repo, run `bin/setup` to install dependencies. Then run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt.
 
+### Using Git Trailers for Changelog Entries
+
+Reissue builds its changelog from git trailers. When making commits, add trailers that adhere to the Keep a Changelog format.
+
+```bash
+git commit -m "Add breaking API changes
+
+Added: New Reissue API
+Changed: API of Reissue switched from foo to bar
+Version: major"
+```
+
 ## Releasing This Gem
 
 1. Run `rake build:checksum` to build the gem and generate checksums
