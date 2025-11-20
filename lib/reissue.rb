@@ -70,13 +70,36 @@ module Reissue
       unreleased_version = changelog["versions"].find { |v| v["date"] == "Unreleased" }
 
       if unreleased_version
-        # Update with fragment data
+        # Remove the unreleased version from the changelog to avoid duplication
+        # when we call update (which does unshift)
+        changelog["versions"].delete(unreleased_version)
+
+        # Write the modified changelog (with unreleased version removed) back to file
+        # This is necessary because update() re-parses from the file
+        changelog_updater.instance_variable_set(:@changelog, changelog)
+        changelog_updater.write(changelog_file, retain_changelogs: false)
+
+        # Get fragment changes
+        handler = FragmentHandler.for(fragment)
+        fragment_changes = handler.read
+
+        # Merge existing changes with fragment changes, deduplicating entries
+        merged_changes = (unreleased_version["changes"] || {}).dup
+        fragment_changes.each do |section, entries|
+          merged_changes[section] ||= []
+          # Only add entries that don't already exist
+          entries.each do |entry|
+            merged_changes[section] << entry unless merged_changes[section].include?(entry)
+          end
+        end
+
+        # Update with merged data (this will unshift the version back into the array)
         changelog_updater.update(
           unreleased_version["version"],
           date: "Unreleased",
-          changes: unreleased_version["changes"] || {},
-          fragment: fragment,
-          version_limit: changelog["versions"].size
+          changes: merged_changes,
+          fragment: nil,  # Don't read fragments again since we already merged them
+          version_limit: changelog["versions"].size + 1  # +1 because we removed one
         )
         changelog_updater.write(changelog_file, retain_changelogs: false)
       end

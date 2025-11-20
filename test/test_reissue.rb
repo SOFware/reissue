@@ -82,6 +82,95 @@ class TestReissue < Minitest::Spec
       assert_match(/\[0.1.2\] - 2021-01-01/, contents)
     end
 
+    it "merges git trailer changes with existing unreleased changes without duplication" do
+      # Create a changelog with an unreleased version that has existing changes
+      # and an older released version
+      changelog_file = Tempfile.new
+      changelog_file << <<~CHANGELOG
+        # Changelog
+
+        All notable changes to this project will be documented in this file.
+
+        The format is based on [Keep a Changelog](http://keepachangelog.com/)
+        and this project adheres to [Semantic Versioning](http://semver.org/).
+
+        ## [0.4.5] - Unreleased
+
+        ### Added
+
+        - Existing feature from changelog
+
+        ## [0.4.4] - 2025-10-17
+
+        ### Added
+
+        - Old feature
+      CHANGELOG
+      changelog_file.close
+
+      # Create a temporary git repo to simulate git trailers
+      Dir.mktmpdir do |tempdir|
+        Dir.chdir(tempdir) do
+          system("git init -q")
+          system("git config user.email 'test@example.com'")
+          system("git config user.name 'Test User'")
+
+          # Create an initial commit with a version tag
+          File.write("README.md", "Initial")
+          system("git add .")
+          system("git commit -q -m 'Initial commit'")
+          system("git tag v0.4.4")
+
+          # Create commits with git trailers
+          File.write("feature1.txt", "Feature 1")
+          system("git add .")
+          system("git commit -q -m 'Add feature 1' -m 'Added: Feature from git trailer'")
+
+          File.write("feature2.txt", "Feature 2")
+          system("git add .")
+          system("git commit -q -m 'Fix bug' -m 'Fixed: Bug fix from git trailer'")
+
+          # Copy the changelog into the repo
+          FileUtils.cp(changelog_file.path, "CHANGELOG.md")
+
+          # Finalize with git trailers
+          Reissue.finalize("2025-11-20", changelog_file: "CHANGELOG.md", fragment: :git)
+
+          contents = File.read("CHANGELOG.md")
+
+          # Should have exactly one 0.4.5 entry with the release date
+          assert_equal 1, contents.scan(/## \[0.4.5\]/).length,
+            "Should have exactly one 0.4.5 version entry, but found: #{contents.scan(/## \[0.4.5\].*/).inspect}"
+
+          # Should not have an unreleased 0.4.5
+          refute_match(/\[0.4.5\] - Unreleased/, contents,
+            "Should not have an unreleased 0.4.5 version")
+
+          # Should have the release date
+          assert_match(/\[0.4.5\] - 2025-11-20/, contents,
+            "Should have 0.4.5 with release date")
+
+          # Should include both existing changes and git trailer changes
+          assert_match(/Existing feature from changelog/, contents,
+            "Should preserve existing changelog entries")
+          assert_match(/Feature from git trailer/, contents,
+            "Should include git trailer entries")
+          assert_match(/Bug fix from git trailer/, contents,
+            "Should include git trailer entries")
+
+          # Should still have 0.4.4
+          assert_match(/\[0.4.4\] - 2025-10-17/, contents,
+            "Should preserve 0.4.4 version")
+
+          # Should have unique entries (no duplicates)
+          added_section = contents[/### Added\n(.*?)(?=###|\z)/m, 1]
+          entries = added_section.scan(/^- (.+)$/).flatten
+          assert_equal entries.uniq, entries,
+            "Should not have duplicate entries in Added section"
+        end
+      end
+    end
+
     it "returns the version number and release date" do
       fixture_changelog = File.expand_path("fixtures/changelog.md", __dir__)
       changelog_file = Tempfile.new
