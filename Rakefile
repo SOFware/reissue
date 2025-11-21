@@ -18,5 +18,4 @@ Reissue::Task.create :reissue do |task|
   task.version_file = "lib/reissue/version.rb"
   task.fragment = :git  # Use git trailers for changelog entries
   task.push_finalize = :branch
-  # Note: clear_fragments has no effect with :git
 end
