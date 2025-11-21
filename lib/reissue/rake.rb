@@ -197,7 +197,8 @@ module Reissue
         finalize_message = "Finalize the changelog for version #{version} on #{date}"
         if commit_finalize
           if finalize_with_branch?
-            tasker["#{name}:branch"].invoke("reissue/#{version}")
+            # Use "finalize/" prefix for the version being released
+            tasker["#{name}:branch"].invoke("finalize/#{version}")
           end
           system("git add -u")
           system("git commit -m '#{finalize_message}'")
