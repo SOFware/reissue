@@ -149,6 +149,27 @@ module Reissue
         end
       end
 
+      def test_read_parses_multiline_trailers
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Update dependency
+
+            Fixed: Updating discharger to latest version to pull in fix to make sure
+            qualifies tag versioning works correctly with creating changelog from
+            git trailers.
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          result = handler.read
+
+          assert_equal 1, result["Fixed"].length
+          expected_message = "Updating discharger to latest version to pull in fix to make sure " \
+            "qualifies tag versioning works correctly with creating changelog from " \
+            "git trailers."
+          assert_match(/^#{Regexp.escape(expected_message)} \(\h{7}\)$/, result["Fixed"].first)
+        end
+      end
+
       def test_read_only_includes_commits_since_last_tag
         with_test_git_repo do
           # Create first commit and tag it
