@@ -1,6 +1,6 @@
 # Shared Release Workflow
 
-Reissue hosts the shared release workflow for Ruby gems.
+Reissue hosts a shared release workflow to be used with releasing to Ruby gems.
 
 ## Usage in Reissue
 
@@ -38,6 +38,7 @@ jobs:
 
 - `git_user_email` - Email for git commits (default: `github-actions[bot]@users.noreply.github.com`)
 - `git_user_name` - Name for git commits (default: `github-actions[bot]`)
+- `version_bump_branch_prefix` - Branch prefix for version bump PRs (default: `reissue/`, creates branches like `reissue/0.5.0`)
 
 ## Ruby Version
 

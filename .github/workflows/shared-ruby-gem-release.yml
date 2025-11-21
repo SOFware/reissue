@@ -21,6 +21,11 @@ on:
         required: false
         type: string
         default: 'github-actions[bot]'
+      version_bump_branch_prefix:
+        description: 'Branch prefix for version bump PRs (e.g., reissue/ creates reissue/X.Y.Z)'
+        required: false
+        type: string
+        default: 'reissue/'
 
 jobs:
   release:
@@ -91,7 +96,7 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: bump-version-${{ steps.new_version.outputs.new_version }}
+          branch: ${{ inputs.version_bump_branch_prefix }}${{ steps.new_version.outputs.new_version }}
           base: main
           commit-message: "Bump version to ${{ steps.new_version.outputs.new_version }}"
           title: "Bump version to ${{ steps.new_version.outputs.new_version }}"
