@@ -1,0 +1,23 @@
+name: Release gem to RubyGems.org
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_segment:
+        description: 'Version segment to bump (patch, minor, major)'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+
+jobs:
+  release:
+    uses: ./.github/workflows/shared-ruby-gem-release.yml
+    with:
+      gem_name: reissue
+      module_name: Reissue
+      git_user_email: 'gems@sofwarellc.com'
+      git_user_name: 'SOFware'

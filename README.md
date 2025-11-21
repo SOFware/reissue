@@ -298,7 +298,50 @@ Changed: API of Reissue switched from foo to bar
 Version: major"
 ```
 
-## Releasing This Gem
+## Automated Releases with GitHub Actions
+
+### For This Gem (Reissue)
+
+Use the GitHub Actions workflow for streamlined releases:
+
+1. Go to Actions tab in GitHub
+2. Select "Release gem to RubyGems.org" workflow
+3. Click "Run workflow"
+4. The workflow will:
+   - Finalize the changelog with the release date
+   - Build and publish the gem to RubyGems.org using Trusted Publishing
+   - Create a PR with the next version bump
+5. Merge the version bump PR to continue development
+
+### For Other Gems Using Reissue
+
+Reissue provides a shared release workflow that any gem can use. Create `.github/workflows/release.yml`:
+
+```yaml
+name: Release gem to RubyGems.org
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    uses: SOFware/reissue/.github/workflows/shared-ruby-gem-release.yml@main
+    with:
+      gem_name: your-gem-name       # e.g., 'discharger', 'newshound'
+      module_name: YourModuleName    # e.g., 'Discharger', 'Newshound'
+```
+
+**Required inputs:**
+- `gem_name` - The gem name (e.g., `reissue`)
+- `module_name` - The Ruby module/class name (e.g., `Reissue`)
+
+**Note:** Ruby version is auto-detected from `.ruby-version`, `.tool-versions`, or `Gemfile`.
+
+See `.github/workflows/SHARED_WORKFLOW_README.md` for detailed documentation on using the shared workflow.
+
+### Manual Release
+
+For local releases:
 
 1. Run `rake build:checksum` to build the gem and generate checksums
 2. Run `rake release` to push to [rubygems.org](https://rubygems.org)
