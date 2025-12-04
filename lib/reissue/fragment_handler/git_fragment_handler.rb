@@ -131,12 +131,12 @@ module Reissue
               section_name = normalize_section_name(match[1])
               trailer_value = match[2].strip
 
-              # Collect continuation lines (non-empty lines that don't start a new trailer)
+              # Collect continuation lines (non-empty lines that don't start a new changelog trailer)
               while i < lines.length
                 next_line = lines[i].rstrip
-                # Stop at empty line or any key:value pattern (trailer-like line)
+                # Stop at empty line or another changelog trailer
                 break if next_line.strip.empty?
-                break if next_line.match(/^\w+:\s*.+$/)
+                break if next_line.match(TRAILER_REGEX)
 
                 trailer_value += " #{next_line.strip}"
                 i += 1
