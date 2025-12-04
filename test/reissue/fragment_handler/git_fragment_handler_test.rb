@@ -157,8 +157,8 @@ module Reissue
             Update dependency
 
             Fixed: Updating discharger to latest version to pull in fix to make sure
-            qualifies tag versioning works correctly with creating changelog from
-            git trailers.
+              qualifies tag versioning works correctly with creating changelog from
+              git trailers.
           MSG
 
           handler = Reissue::FragmentHandler::GitFragmentHandler.new
