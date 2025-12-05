@@ -115,6 +115,10 @@ class TestRakeBranchNaming < Minitest::Test
     system("git config user.name 'Test'", out: File::NULL, err: File::NULL)
     system("git config user.email 'test@example.com'", out: File::NULL, err: File::NULL)
 
+    # Create a bare repository to use as a fake remote
+    system("git init --bare ../remote.git", out: File::NULL, err: File::NULL)
+    system("git remote add origin ../remote.git", out: File::NULL, err: File::NULL)
+
     # Create version file
     File.write("version.rb", "VERSION = \"#{version}\"")
 
@@ -134,6 +138,7 @@ class TestRakeBranchNaming < Minitest::Test
     system("git add .", out: File::NULL, err: File::NULL)
     system("git commit -m 'Initial setup'", out: File::NULL, err: File::NULL)
     system("git branch -M main", out: File::NULL, err: File::NULL)
+    system("git push -u origin main", out: File::NULL, err: File::NULL)
     system("git tag v#{version}", out: File::NULL, err: File::NULL)
   end
 
@@ -141,6 +146,10 @@ class TestRakeBranchNaming < Minitest::Test
     system("git init", out: File::NULL, err: File::NULL)
     system("git config user.name 'Test'", out: File::NULL, err: File::NULL)
     system("git config user.email 'test@example.com'", out: File::NULL, err: File::NULL)
+
+    # Create a bare repository to use as a fake remote
+    system("git init --bare ../remote.git", out: File::NULL, err: File::NULL)
+    system("git remote add origin ../remote.git", out: File::NULL, err: File::NULL)
 
     # Create version file (already bumped)
     File.write("version.rb", "VERSION = \"#{changelog_version}\"")
@@ -165,6 +174,7 @@ class TestRakeBranchNaming < Minitest::Test
     system("git add .", out: File::NULL, err: File::NULL)
     system("git commit -m 'Initial setup'", out: File::NULL, err: File::NULL)
     system("git branch -M main", out: File::NULL, err: File::NULL)
+    system("git push -u origin main", out: File::NULL, err: File::NULL)
   end
 
   def create_rakefile
@@ -174,7 +184,15 @@ class TestRakeBranchNaming < Minitest::Test
       Reissue::Task.create :reissue do |task|
         task.version_file = "version.rb"
         task.fragment = :git
+        # Create branches for testing but override push to avoid conflicts
         task.push_finalize = :branch
+        task.push_reissue = :branch
+      end
+
+      # Override push task for testing - these tests only verify branch names
+      Rake::Task["reissue:push"].clear
+      task "reissue:push" do
+        # No-op in tests - we're only testing branch creation
       end
     RUBY
   end
