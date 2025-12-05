@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    reissue (0.4.6)
+    reissue (0.4.7)
       rake
 
 GEM
