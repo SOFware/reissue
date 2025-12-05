@@ -119,15 +119,28 @@ module Reissue
         commits.each do |commit|
           sha = commit[:sha]
           message = commit[:message]
+          lines = message.lines
 
-          # Split commit message into lines and look for trailers
-          message.lines.each do |line|
-            line = line.strip
-            next if line.empty?
+          i = 0
+          while i < lines.length
+            line = lines[i].rstrip
+            i += 1
+            next if line.strip.empty?
 
             if (match = line.match(TRAILER_REGEX))
               section_name = normalize_section_name(match[1])
               trailer_value = match[2].strip
+
+              # Collect continuation lines (non-empty lines that don't start a new changelog trailer)
+              while i < lines.length
+                next_line = lines[i].rstrip
+                # Stop at empty line or another changelog trailer
+                break if next_line.strip.empty?
+                break if next_line.match(TRAILER_REGEX)
+
+                trailer_value += " #{next_line.strip}"
+                i += 1
+              end
 
               result[section_name] ||= []
               # Append the short SHA in parentheses

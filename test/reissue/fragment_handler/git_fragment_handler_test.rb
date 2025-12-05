@@ -135,17 +135,59 @@ module Reissue
           create_commit_with_message <<~MSG
             Mixed content
 
-            Fixed: Valid trailer
             NotASection: Invalid section name
             Missing colon trailer
             Random: Not a valid section
+
+            Fixed: Valid trailer
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          result = handler.read
+
+          # Only the Fixed trailer is captured; non-changelog lines before it are ignored
+          assert_equal 1, result["Fixed"].length
+          assert_match(/^Valid trailer \(\h{7}\)$/, result["Fixed"].first)
+        end
+      end
+
+      def test_read_parses_multiline_trailers
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Update dependency
+
+            Fixed: Updating discharger to latest version to pull in fix to make sure
+              qualifies tag versioning works correctly with creating changelog from
+              git trailers.
           MSG
 
           handler = Reissue::FragmentHandler::GitFragmentHandler.new
           result = handler.read
 
           assert_equal 1, result["Fixed"].length
-          assert_match(/^Valid trailer \(\h{7}\)$/, result["Fixed"].first)
+          expected_message = "Updating discharger to latest version to pull in fix to make sure " \
+            "qualifies tag versioning works correctly with creating changelog from " \
+            "git trailers."
+          assert_match(/^#{Regexp.escape(expected_message)} \(\h{7}\)$/, result["Fixed"].first)
+        end
+      end
+
+      def test_read_multiline_trailers_not_truncated_by_colon_in_continuation
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Update requirements
+
+            Changed: Requirements have a boolean to mark enforced or unenforced. Will
+            be used to determine: enforcement status in the system.
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          result = handler.read
+
+          assert_equal 1, result["Changed"].length
+          expected_message = "Requirements have a boolean to mark enforced or unenforced. Will " \
+            "be used to determine: enforcement status in the system."
+          assert_match(/^#{Regexp.escape(expected_message)} \(\h{7}\)$/, result["Changed"].first)
         end
       end
 
