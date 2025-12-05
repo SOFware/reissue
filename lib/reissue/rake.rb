@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "rake/tasklib"
+require "open3"
 require_relative "../reissue"
 
 module Reissue
@@ -114,6 +115,20 @@ module Reissue
     attr_reader :formatter, :tasker
     private :formatter, :tasker
 
+    # Run a shell command and raise an error with details if it fails
+    def run_command(command, error_message)
+      stdout, stderr, status = Open3.capture3(command)
+      unless status.success?
+        error_details = [error_message]
+        error_details << "Command: #{command}"
+        error_details << "Exit status: #{status.exitstatus}"
+        error_details << "STDOUT: #{stdout.strip}" unless stdout.strip.empty?
+        error_details << "STDERR: #{stderr.strip}" unless stderr.strip.empty?
+        raise error_details.join("\n")
+      end
+      stdout
+    end
+
     def finalize_with_branch?
       push_finalize == :branch
     end
@@ -131,7 +146,7 @@ module Reissue
     end
 
     def bundle
-      if defined?(Bundler)
+      if defined?(Bundler) && File.exist?("Gemfile")
         Bundler.with_unbundled_env do
           system("bundle install")
         end
@@ -153,9 +168,9 @@ module Reissue
 
         tasker["#{name}:clear_fragments"].invoke
 
-        system("git add -u")
+        run_command("git add -u", "Failed to stage updated files")
         if updated_paths&.any?
-          system("git add #{updated_paths.join(" ")}")
+          run_command("git add #{updated_paths.join(" ")}", "Failed to stage additional paths: #{updated_paths.join(", ")}")
         end
 
         bump_message = "Bump version to #{new_version}"
@@ -163,7 +178,7 @@ module Reissue
           if reissue_version_with_branch?
             tasker["#{name}:branch"].invoke("reissue/#{new_version}")
           end
-          system("git commit -m '#{bump_message}'")
+          run_command("git commit -m '#{bump_message}'", "Failed to commit version bump")
           tasker["#{name}:push"].invoke if push_reissue?
         else
           system("echo '#{bump_message}'")
@@ -200,8 +215,8 @@ module Reissue
             # Use "finalize/" prefix for the version being released
             tasker["#{name}:branch"].invoke("finalize/#{version}")
           end
-          system("git add -u")
-          system("git commit -m '#{finalize_message}'")
+          run_command("git add -u", "Failed to stage finalized changelog")
+          run_command("git commit -m '#{finalize_message}'", "Failed to commit finalized changelog")
           tasker["#{name}:push"].invoke if push_finalize?
         else
           system("echo '#{finalize_message}'")
@@ -224,14 +239,14 @@ module Reissue
           # Delete matching tag if it exists
           system("git tag -d v#{version} 2>/dev/null || true")
           # Delete the branch
-          system("git branch -D #{branch_name}")
+          run_command("git branch -D #{branch_name}", "Failed to delete existing branch #{branch_name}")
         end
-        system("git checkout -b #{branch_name}")
+        run_command("git checkout -b #{branch_name}", "Failed to create and checkout branch #{branch_name}")
       end
 
       desc "Push the current branch to the remote repository."
       task "#{name}:push" do
-        system("git push origin HEAD")
+        run_command("git push origin HEAD", "Failed to push to remote repository")
       end
 
       desc "Preview changelog entries that will be added from fragments or git trailers"
@@ -288,8 +303,8 @@ module Reissue
           formatter.clear_fragments(fragment)
           clear_message = "Clear changelog fragments"
           if commit_clear_fragments
-            system("git add #{fragment}")
-            system("git commit -m '#{clear_message}'")
+            run_command("git add #{fragment}", "Failed to stage cleared fragments")
+            run_command("git commit -m '#{clear_message}'", "Failed to commit cleared fragments")
           else
             system("echo '#{clear_message}'")
           end
