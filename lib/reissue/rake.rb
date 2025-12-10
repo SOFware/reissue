@@ -160,6 +160,7 @@ module Reissue
         new_version = formatter.call(
           segment:,
           version_file:,
+          changelog_file:,
           version_limit:,
           version_redo_proc:,
           fragment: fragment
