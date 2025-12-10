@@ -1,0 +1,18 @@
+name: Release gem to RubyGems.org
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Test workflow without publishing to RubyGems'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    uses: ./.github/workflows/shared-ruby-gem-release.yml
+    with:
+      git_user_email: 'gems@sofwarellc.com'
+      git_user_name: 'SOFware'
+      dry_run: ${{ inputs.dry_run }}
