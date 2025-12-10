@@ -28,6 +28,7 @@ All inputs are optional:
 | `git_user_name` | `github-actions[bot]` | Name for git commits |
 | `default_branch` | `main` | Default branch name (use `master` if needed) |
 | `reissue_task` | `reissue` | Name of the reissue rake task |
+| `dry_run` | `false` | Test workflow without publishing to RubyGems |
 
 ## Outputs
 

@@ -23,6 +23,11 @@ on:
         required: false
         type: string
         default: 'reissue'
+      dry_run:
+        description: 'Test workflow without publishing to RubyGems'
+        required: false
+        type: boolean
+        default: false
     outputs:
       version:
         description: 'The version that was released'
@@ -77,7 +82,12 @@ jobs:
           fi
 
       - name: Release gem to RubyGems
+        if: inputs.dry_run != true
         uses: rubygems/release-gem@v1
+
+      - name: Dry run - skip RubyGems publish
+        if: inputs.dry_run == true
+        run: echo "Dry run - would publish version ${{ steps.version.outputs.released }} to RubyGems"
 
       - name: Bump version for next cycle
         id: bump
