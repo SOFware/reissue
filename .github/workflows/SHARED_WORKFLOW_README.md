@@ -22,29 +22,66 @@ jobs:
 
 All inputs are optional:
 
-- `git_user_email` - Email for git commits (default: `github-actions[bot]@users.noreply.github.com`)
-- `git_user_name` - Name for git commits (default: `github-actions[bot]`)
+| Input | Default | Description |
+|-------|---------|-------------|
+| `git_user_email` | `github-actions[bot]@users.noreply.github.com` | Email for git commits |
+| `git_user_name` | `github-actions[bot]` | Name for git commits |
+| `default_branch` | `main` | Default branch name (use `master` if needed) |
+| `reissue_task` | `reissue` | Name of the reissue rake task |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `version` | The version that was released |
+
+Example using the output:
+```yaml
+jobs:
+  release:
+    uses: SOFware/reissue/.github/workflows/shared-ruby-gem-release.yml@main
+
+  notify:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Released version ${{ needs.release.outputs.version }}"
+```
 
 ## What It Does
 
 1. Finalizes changelog using `rake build:checksum`
-2. Commits finalization changes if any
-3. Publishes to RubyGems.org via Trusted Publishing
-4. Runs `rake reissue` to bump version for next cycle
-5. Creates PR if the rake task created a new branch
+2. Extracts version from built gem
+3. Commits finalization changes if any
+4. Publishes to RubyGems.org via Trusted Publishing
+5. Runs `rake reissue` to bump version for next cycle
+6. Either creates a PR (if rake created a branch) or pushes directly
+
+## Rake Task Configuration
+
+The workflow handles two scenarios based on your Rakefile config:
+
+**Option A: Rake creates branches (recommended for review workflow)**
+```ruby
+Reissue::Task.create do |task|
+  task.version_file = "lib/my_gem/version.rb"
+  task.commit = true
+  task.push_reissue = :branch  # Rake creates branch, workflow creates PR
+end
+```
+
+**Option B: Workflow handles commits (for CI-disabled commits)**
+```ruby
+Reissue::Task.create do |task|
+  task.version_file = "lib/my_gem/version.rb"
+  task.commit = !ENV["GITHUB_ACTIONS"]  # Disabled in CI
+  task.push_reissue = false
+end
+```
+The workflow detects uncommitted changes and commits/pushes them directly.
 
 ## Prerequisites
 
-Each gem needs:
-
-1. **Reissue configured in Rakefile** with version file and branch settings:
-   ```ruby
-   Reissue::Task.create do |task|
-     task.version_file = "lib/my_gem/version.rb"
-     task.push_reissue = :branch  # Creates branch for version bump PR
-   end
-   ```
-
+1. **Reissue configured in Rakefile** with `version_file` set
 2. **RubyGems Trusted Publishing** configured for the repository
-
 3. **GitHub Actions permissions** for contents and pull-requests
