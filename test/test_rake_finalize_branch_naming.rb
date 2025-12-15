@@ -7,13 +7,11 @@ require "tmpdir"
 
 class TestRakeBranchNaming < Minitest::Test
   def setup
-    @original_stdout = $stdout
     @rake = Rake::Application.new
     Rake.application = @rake
   end
 
   def teardown
-    $stdout = @original_stdout
     Rake.application.clear
   end
 

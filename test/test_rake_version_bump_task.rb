@@ -7,13 +7,11 @@ require "tmpdir"
 
 class TestRakeVersionBumpTask < Minitest::Test
   def setup
-    @original_stdout = $stdout
     @rake = Rake::Application.new
     Rake.application = @rake
   end
 
   def teardown
-    $stdout = @original_stdout
     Rake.application.clear
   end
 
@@ -29,17 +27,13 @@ class TestRakeVersionBumpTask < Minitest::Test
         load "Rakefile"
 
         # Capture output
-        output = StringIO.new
-        $stdout = output
+        output, _err = capture_io { Rake::Task["reissue:bump"].invoke }
 
-        Rake::Task["reissue:bump"].invoke
-
-        result = output.string
         version_content = File.read("version.rb")
 
         # Verify version was bumped to 2.0.0
         assert_match(/VERSION = "2.0.0"/, version_content)
-        assert_match(/Version bumped \(major\) to 2\.0\.0/, result)
+        assert_match(/Version bumped \(major\) to 2\.0\.0/, output)
       end
     end
   end
@@ -55,17 +49,13 @@ class TestRakeVersionBumpTask < Minitest::Test
         create_rakefile
         load "Rakefile"
 
-        output = StringIO.new
-        $stdout = output
+        output, _err = capture_io { Rake::Task["reissue:bump"].invoke }
 
-        Rake::Task["reissue:bump"].invoke
-
-        result = output.string
         version_content = File.read("version.rb")
 
         # Verify version was bumped to 1.3.0
         assert_match(/VERSION = "1.3.0"/, version_content)
-        assert_match(/Version bumped \(minor\) to 1\.3\.0/, result)
+        assert_match(/Version bumped \(minor\) to 1\.3\.0/, output)
       end
     end
   end
@@ -81,17 +71,13 @@ class TestRakeVersionBumpTask < Minitest::Test
         create_rakefile
         load "Rakefile"
 
-        output = StringIO.new
-        $stdout = output
+        output, _err = capture_io { Rake::Task["reissue:bump"].invoke }
 
-        Rake::Task["reissue:bump"].invoke
-
-        result = output.string
         version_content = File.read("version.rb")
 
         # Verify version was bumped to 1.2.4
         assert_match(/VERSION = "1.2.4"/, version_content)
-        assert_match(/Version bumped \(patch\) to 1\.2\.4/, result)
+        assert_match(/Version bumped \(patch\) to 1\.2\.4/, output)
       end
     end
   end
@@ -107,17 +93,13 @@ class TestRakeVersionBumpTask < Minitest::Test
         create_rakefile
         load "Rakefile"
 
-        output = StringIO.new
-        $stdout = output
+        output, _err = capture_io { Rake::Task["reissue:bump"].invoke }
 
-        Rake::Task["reissue:bump"].invoke
-
-        result = output.string
         version_content = File.read("version.rb")
 
         # Verify version was NOT bumped
         assert_match(/VERSION = "1.2.3"/, version_content)
-        refute_match(/Version bumped/, result)
+        refute_match(/Version bumped/, output)
       end
     end
   end
@@ -134,10 +116,7 @@ class TestRakeVersionBumpTask < Minitest::Test
         create_rakefile
         load "Rakefile"
 
-        output = StringIO.new
-        $stdout = output
-
-        Rake::Task["reissue:bump"].invoke
+        capture_io { Rake::Task["reissue:bump"].invoke }
 
         version_content = File.read("version.rb")
 
@@ -159,12 +138,9 @@ class TestRakeVersionBumpTask < Minitest::Test
         load "Rakefile"
 
         # First invocation - should bump
-        output1 = StringIO.new
-        $stdout = output1
-        Rake::Task["reissue:bump"].invoke
-        result1 = output1.string
+        output1, _err1 = capture_io { Rake::Task["reissue:bump"].invoke }
 
-        assert_match(/Version bumped \(major\) to 2\.0\.0/, result1)
+        assert_match(/Version bumped \(major\) to 2\.0\.0/, output1)
 
         # Reset rake tasks for second invocation
         Rake.application.clear
@@ -173,16 +149,13 @@ class TestRakeVersionBumpTask < Minitest::Test
         load "Rakefile"
 
         # Second invocation - should skip
-        output2 = StringIO.new
-        $stdout = output2
-        Rake::Task["reissue:bump"].invoke
-        result2 = output2.string
+        output2, _err2 = capture_io { Rake::Task["reissue:bump"].invoke }
 
         version_content = File.read("version.rb")
 
         # Verify version is still 2.0.0 and not bumped again
         assert_match(/VERSION = "2.0.0"/, version_content)
-        assert_match(/Version already bumped.*1\.2\.3.*2\.0\.0.*skipping/, result2)
+        assert_match(/Version already bumped.*1\.2\.3.*2\.0\.0.*skipping/, output2)
       end
     end
   end
@@ -200,10 +173,7 @@ class TestRakeVersionBumpTask < Minitest::Test
         create_rakefile
         load "Rakefile"
 
-        output = StringIO.new
-        $stdout = output
-
-        Rake::Task["reissue:bump"].invoke
+        capture_io { Rake::Task["reissue:bump"].invoke }
 
         version_content = File.read("version.rb")
 
@@ -232,10 +202,7 @@ class TestRakeVersionBumpTask < Minitest::Test
         create_rakefile
         load "Rakefile"
 
-        output = StringIO.new
-        $stdout = output
-
-        Rake::Task["reissue:bump"].invoke
+        capture_io { Rake::Task["reissue:bump"].invoke }
 
         version_content = File.read("version.rb")
 

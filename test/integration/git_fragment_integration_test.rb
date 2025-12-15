@@ -224,8 +224,8 @@ class GitFragmentIntegrationTest < Minitest::Test
         create_commit_with_trailer("Feature", "Added: Amazing new feature")
         create_commit_with_trailer("Fix", "Fixed: Annoying bug")
 
-        # Run the rake task
-        `bundle exec rake reissue[patch] 2>&1`
+        # Run the rake task (suppress output to avoid polluting test results)
+        system("bundle exec rake reissue[patch]", out: File::NULL, err: File::NULL)
 
         # Check that version was bumped
         version_content = File.read("lib/test_gem/version.rb")

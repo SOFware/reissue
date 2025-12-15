@@ -182,7 +182,7 @@ module Reissue
           run_command("git commit -m '#{bump_message}'", "Failed to commit version bump")
           tasker["#{name}:push"].invoke if push_reissue?
         else
-          system("echo '#{bump_message}'")
+          puts bump_message
         end
 
         new_version
@@ -220,7 +220,7 @@ module Reissue
           run_command("git commit -m '#{finalize_message}'", "Failed to commit finalized changelog")
           tasker["#{name}:push"].invoke if push_finalize?
         else
-          system("echo '#{finalize_message}'")
+          puts finalize_message
         end
       end
 
@@ -307,7 +307,7 @@ module Reissue
             run_command("git add #{fragment}", "Failed to stage cleared fragments")
             run_command("git commit -m '#{clear_message}'", "Failed to commit cleared fragments")
           else
-            system("echo '#{clear_message}'")
+            puts clear_message
           end
         end
       end
