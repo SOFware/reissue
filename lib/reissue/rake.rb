@@ -231,24 +231,16 @@ module Reissue
       end
 
       desc <<~MSG
-        Create a new branch for the next version.
+        Create or switch to a branch for the release workflow.
 
-        If the branch already exists it will be deleted and a new one will be created along with a new tag.
+        Uses git checkout -B to handle both new and existing branches.
       MSG
 
       task "#{name}:branch", [:branch_name] do |task, args|
         raise "No branch name specified" unless args[:branch_name]
         branch_name = args[:branch_name]
-        # Force create branch by deleting if exists, then creating fresh
-        if system("git show-ref --verify --quiet refs/heads/#{branch_name}")
-          # Extract version from branch name (e.g., "reissue/0.4.1" -> "0.4.1")
-          version = branch_name.sub(/^reissue\//, "")
-          # Delete matching tag if it exists
-          system("git tag -d v#{version} 2>/dev/null || true")
-          # Delete the branch
-          run_command("git branch -D #{branch_name}", "Failed to delete existing branch #{branch_name}")
-        end
-        run_command("git checkout -b #{branch_name}", "Failed to create and checkout branch #{branch_name}")
+        # Create branch or reset if exists (-B flag handles both cases)
+        run_command("git checkout -B #{branch_name}", "Failed to checkout branch #{branch_name}")
       end
 
       desc "Push the current branch to the remote repository."

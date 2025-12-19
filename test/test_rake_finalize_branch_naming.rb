@@ -106,6 +106,38 @@ class TestRakeBranchNaming < Minitest::Test
     end
   end
 
+  def test_branch_task_handles_existing_branch
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        setup_git_repo_with_changelog("0.4.5")
+
+        create_rakefile
+        load "Rakefile"
+
+        # First invocation - creates branch
+        capture_io do
+          Rake::Task["reissue:branch"].invoke("test/branch")
+        end
+        assert_equal "test/branch", `git branch --show-current`.strip
+
+        # Re-invoke on same branch (simulates retry while on target branch)
+        Rake::Task["reissue:branch"].reenable
+        capture_io do
+          Rake::Task["reissue:branch"].invoke("test/branch")
+        end
+        assert_equal "test/branch", `git branch --show-current`.strip
+
+        # Switch away and re-invoke (simulates retry from different branch)
+        system("git checkout main", out: File::NULL, err: File::NULL)
+        Rake::Task["reissue:branch"].reenable
+        capture_io do
+          Rake::Task["reissue:branch"].invoke("test/branch")
+        end
+        assert_equal "test/branch", `git branch --show-current`.strip
+      end
+    end
+  end
+
   private
 
   def setup_git_repo_with_version(version)
