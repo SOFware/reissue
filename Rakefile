@@ -17,5 +17,5 @@ require_relative "lib/reissue/gem"
 Reissue::Task.create :reissue do |task|
   task.version_file = "lib/reissue/version.rb"
   task.fragment = :git  # Use git trailers for changelog entries
-  task.push_finalize = :branch
+  task.push_finalize = false
 end
