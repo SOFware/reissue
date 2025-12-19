@@ -79,13 +79,6 @@ jobs:
           version=$(ls pkg/*.gem | head -1 | sed 's/.*-\([0-9][^-]*\)\.gem/\1/')
           echo "released=$version" >> $GITHUB_OUTPUT
 
-      - name: Commit finalization changes
-        run: |
-          git add -A
-          if ! git diff --cached --quiet; then
-            git commit -m "Finalize version ${{ steps.version.outputs.released }} for release"
-          fi
-
       - name: Release gem to RubyGems
         if: inputs.dry_run != true
         uses: rubygems/release-gem@v1
