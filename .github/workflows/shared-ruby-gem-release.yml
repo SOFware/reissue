@@ -64,9 +64,6 @@ jobs:
           git log --oneline -3
           git status
 
-      - name: Finalize and build gem
-        run: bundle exec rake build:checksum
-
       - name: Debug state after finalize
         if: always()
         run: |
