@@ -6,7 +6,7 @@ Keep your version numbers and changelogs consistent and up-to-date with minimal 
 
 ## Bottom Line Up Front
 
-When releasing gems, you typically run `rake build:checksum` to build the gem and generate the checksum, 
+When releasing gems, you typically run `rake build:checksum` to build the gem and generate checksums,
 then `rake release` to push the `.gem` file to [rubygems.org](https://rubygems.org).
 
 With Reissue, the process remains the same, but you get automatic version bumping and changelog management included.
@@ -285,18 +285,6 @@ Version trailers are case-insensitive:
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt.
-
-### Using Git Trailers for Changelog Entries
-
-Reissue builds its changelog from git trailers. When making commits, add trailers that adhere to the Keep a Changelog format.
-
-```bash
-git commit -m "Add breaking API changes
-
-Added: New Reissue API
-Changed: API of Reissue switched from foo to bar
-Version: major"
-```
 
 ## Automated Releases with GitHub Actions
 
