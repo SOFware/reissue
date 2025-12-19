@@ -57,10 +57,25 @@ jobs:
 
       - name: Record starting branch
         id: start
-        run: echo "branch=$(git branch --show-current)" >> $GITHUB_OUTPUT
+        run: |
+          echo "=== Git state before finalize ==="
+          echo "branch=$(git branch --show-current)" >> $GITHUB_OUTPUT
+          git branch --show-current
+          git log --oneline -3
+          git status
 
       - name: Finalize and build gem
         run: bundle exec rake build:checksum
+
+      - name: Debug state after finalize
+        if: always()
+        run: |
+          echo "=== Git state after finalize ==="
+          git branch --show-current
+          git branch -a
+          git log --oneline -3
+          git status
+          ls -la pkg/ || echo "No pkg directory"
 
       - name: Check for branch change after finalize
         id: finalize_branch
