@@ -7,13 +7,11 @@ require "tmpdir"
 
 class TestRakeChangelogFileOption < Minitest::Test
   def setup
-    @original_stdout = $stdout
     @rake = Rake::Application.new
     Rake.application = @rake
   end
 
   def teardown
-    $stdout = @original_stdout
     Rake.application.clear
   end
 
@@ -36,10 +34,8 @@ class TestRakeChangelogFileOption < Minitest::Test
         create_rakefile_with_changelog("changelog.md")
         load "Rakefile"
 
-        output = StringIO.new
-        $stdout = output
-
-        Rake::Task["reissue"].invoke("patch")
+        # Capture output from rake task
+        capture_io { Rake::Task["reissue"].invoke("patch") }
 
         # Verify the custom changelog file was updated with the new version
         changelog_content = File.read("changelog.md")
@@ -72,10 +68,8 @@ class TestRakeChangelogFileOption < Minitest::Test
         create_rakefile_with_changelog("docs/HISTORY.md")
         load "Rakefile"
 
-        output = StringIO.new
-        $stdout = output
-
-        Rake::Task["reissue"].invoke("minor")
+        # Capture output from rake task
+        capture_io { Rake::Task["reissue"].invoke("minor") }
 
         # Verify the custom path changelog was updated
         changelog_content = File.read("docs/HISTORY.md")

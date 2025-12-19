@@ -7,13 +7,11 @@ require "tmpdir"
 
 class TestRakePreviewTask < Minitest::Test
   def setup
-    @original_stdout = $stdout
     @rake = Rake::Application.new
     Rake.application = @rake
   end
 
   def teardown
-    $stdout = @original_stdout
     Rake.application.clear
   end
 
@@ -48,15 +46,9 @@ class TestRakePreviewTask < Minitest::Test
         # Create version file
         File.write("version.rb", 'VERSION = "1.0.0"')
 
-        # Capture output
-        output = StringIO.new
-        $stdout = output
-
-        # Load and run the preview task
+        # Load and run the preview task (capture output)
         load "Rakefile"
-        Rake::Task["reissue:preview"].invoke
-
-        result = output.string
+        result, _err = capture_io { Rake::Task["reissue:preview"].invoke }
 
         # Verify output
         assert_match(/### Added/, result)
@@ -83,15 +75,9 @@ class TestRakePreviewTask < Minitest::Test
         # Create version file
         File.write("version.rb", 'VERSION = "1.0.0"')
 
-        # Capture output
-        output = StringIO.new
-        $stdout = output
-
-        # Load and run the preview task
+        # Load and run the preview task (capture output)
         load "Rakefile"
-        Rake::Task["reissue:preview"].invoke
-
-        result = output.string
+        result, _err = capture_io { Rake::Task["reissue:preview"].invoke }
 
         # Verify output
         assert_match(/Fragment handling is not configured/, result)
@@ -130,14 +116,8 @@ class TestRakePreviewTask < Minitest::Test
 
         File.write("version.rb", 'VERSION = "1.0.0"')
 
-        # Capture output
-        output = StringIO.new
-        $stdout = output
-
         load "Rakefile"
-        Rake::Task["reissue:preview"].invoke
-
-        result = output.string
+        result, _err = capture_io { Rake::Task["reissue:preview"].invoke }
 
         # Verify output
         assert_match(/No changelog entries found/, result)
