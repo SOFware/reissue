@@ -73,8 +73,14 @@ module Reissue
     # Whether to commit the finalize change to the changelog. Default: true.
     attr_accessor :commit_finalize
 
-    # Whether to commit the clear fragments change. Default: true.
-    attr_accessor :commit_clear_fragments
+    # Whether to commit the clear fragments change.
+    # Returns false for :git fragments since there are no files to commit.
+    attr_writer :commit_clear_fragments
+
+    def commit_clear_fragments
+      return false if fragment == :git
+      @commit_clear_fragments
+    end
 
     # Whether to branch and push the changes. Default: :branch.
     # Requires commit_finialize to be true.
@@ -300,7 +306,8 @@ module Reissue
       desc "Clear fragments"
       task "#{name}:clear_fragments" do
         # Clear fragments after release if configured
-        if fragment && clear_fragments
+        # Only run for directory-based fragments, not :git
+        if fragment && clear_fragments && fragment.is_a?(String)
           formatter.clear_fragments(fragment)
           clear_message = "Clear changelog fragments"
           if commit_clear_fragments
