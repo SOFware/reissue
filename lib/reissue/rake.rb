@@ -253,7 +253,7 @@ module Reissue
 
       desc "Push the current branch to the remote repository."
       task "#{name}:push" do
-        run_command("git push origin HEAD", "Failed to push to remote repository")
+        run_command("git push --force-with-lease origin HEAD", "Failed to push to remote repository")
       end
 
       desc "Preview changelog entries that will be added from fragments or git trailers"
