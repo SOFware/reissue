@@ -10,6 +10,21 @@ module Reissue
       # Regex to match changelog section trailers in commit messages
       TRAILER_REGEX = /^(#{VALID_SECTIONS.join("|")}):\s*(.+)$/i
 
+      # Default pattern for matching version tags (e.g., "v1.2.3")
+      DEFAULT_TAG_PATTERN = /^v(\d+\.\d+\.\d+.*)$/
+
+      # Initialize the handler with optional tag pattern for custom tag formats
+      #
+      # @param tag_pattern [Regexp, nil] Optional regex pattern for matching version tags.
+      #   Must include a capture group for the version number.
+      #   Examples:
+      #     - /^v(\d+\.\d+\.\d+.*)$/ matches "v1.2.3" (default)
+      #     - /^myapp-v(\d+\.\d+\.\d+.*)$/ matches "myapp-v1.2.3"
+      #     - /^qualified-v(\d+\.\d+\.\d+.*)$/ matches "qualified-v0.3.5"
+      def initialize(tag_pattern: nil)
+        @tag_pattern = tag_pattern || DEFAULT_TAG_PATTERN
+      end
+
       # Read changelog entries from git commit trailers
       #
       # @return [Hash] A hash of changelog entries organized by section
@@ -52,9 +67,11 @@ module Reissue
         tag = last_tag
         return nil unless tag
 
-        # Extract version number from tag (e.g., "v1.2.3" -> "1.2.3")
-        version_string = tag.sub(/^v/, "")
-        ::Gem::Version.new(version_string)
+        # Extract version number from tag using the pattern's capture group
+        match = tag.match(@tag_pattern)
+        return nil unless match && match[1]
+
+        ::Gem::Version.new(match[1])
       end
 
       private
@@ -103,14 +120,31 @@ module Reissue
         commits
       end
 
-      # Find the most recent semantic version tag (v*.*.*) by tag creation date across all branches
-      # This ensures we exclude commits that are already in ANY tagged release, not just the current branch
-      # Supports both numeric (v1.2.3) and alphanumeric (v2025.10.C) version tags
+      # Find the highest semantic version tag matching the configured pattern
+      # Uses the tag_pattern regex to filter tags and finds the highest version
       #
-      # @return [String, nil] The most recent version tag or nil if no tags found
+      # @return [String, nil] The highest version tag or nil if no tags found
       def find_last_tag
-        tag = `git for-each-ref --sort=-creatordate --format='%(refname:short)' 'refs/tags/v[0-9]*.[0-9]*.[a-zA-Z0-9]*' --count=1 2>/dev/null`.strip
-        tag.empty? ? nil : tag
+        output = `git tag -l 2>/dev/null`.strip
+        return nil if output.empty?
+
+        tags = output.split("\n")
+
+        matching_tags = tags.filter_map do |tag|
+          match = tag.match(@tag_pattern)
+          next unless match && match[1]
+
+          begin
+            version = ::Gem::Version.new(match[1])
+            {tag: tag, version: version}
+          rescue ArgumentError
+            nil
+          end
+        end
+
+        return nil if matching_tags.empty?
+
+        matching_tags.max_by { |t| t[:version] }&.dig(:tag)
       end
 
       def parse_trailers_from_commits(commits)

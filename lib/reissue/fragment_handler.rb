@@ -22,9 +22,10 @@ module Reissue
     #
     # @param fragment_option [nil, String, Symbol] The fragment configuration
     # @param valid_sections [Array<String>, nil] List of valid section names (for directory handler)
+    # @param tag_pattern [Regexp, nil] Optional regex pattern for matching version tags (for git handler)
     # @return [FragmentHandler] The appropriate handler instance
     # @raise [ArgumentError] If the option is not supported
-    def self.for(fragment_option, valid_sections: nil)
+    def self.for(fragment_option, valid_sections: nil, tag_pattern: nil)
       case fragment_option
       when nil
         require_relative "fragment_handler/null_fragment_handler"
@@ -36,7 +37,7 @@ module Reissue
         DirectoryFragmentHandler.new(fragment_option, **options)
       when :git
         require_relative "fragment_handler/git_fragment_handler"
-        GitFragmentHandler.new
+        GitFragmentHandler.new(tag_pattern: tag_pattern)
       else
         raise ArgumentError, "Invalid fragment option: #{fragment_option.inspect}"
       end
