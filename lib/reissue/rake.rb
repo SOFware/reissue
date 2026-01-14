@@ -245,8 +245,10 @@ module Reissue
           version = branch_name.sub(/^reissue\//, "")
           # Delete matching tag if it exists
           system("git tag -d v#{version} 2>/dev/null || true")
-          # Delete the branch
+          # Delete the local branch
           run_command("git branch -D #{branch_name}", "Failed to delete existing branch #{branch_name}")
+          # Delete the remote tracking ref to prevent --force-with-lease from comparing against stale data
+          system("git branch -d -r origin/#{branch_name} 2>/dev/null")
         end
         run_command("git checkout -b #{branch_name}", "Failed to create and checkout branch #{branch_name}")
       end
