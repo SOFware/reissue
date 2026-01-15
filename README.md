@@ -117,7 +117,15 @@ Reissue::Task.create :reissue do |task|
   # When true, fragments are cleared after a release (only applies when using directory fragments)
   # Note: Has no effect when using :git fragments
   task.clear_fragments = true
-  
+
+  # Optional: Tag pattern for matching version tags. Defaults to /^v(\d+\.\d+\.\d+.*)$/
+  # Must include a capture group for the version number.
+  # Only applies when using :git fragments
+  # Examples:
+  #   /^v(\d+\.\d+\.\d+.*)$/ matches "v1.2.3" (default)
+  #   /^myapp-v(\d+\.\d+\.\d+.*)$/ matches "myapp-v1.2.3"
+  task.tag_pattern = /^myapp-v(\d+\.\d+\.\d+.*)$/
+
   # Deprecated: Use `fragment` instead of `fragment_directory`
   # task.fragment_directory = "changelog_fragments"  # DEPRECATED: Use task.fragment instead
 

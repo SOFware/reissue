@@ -98,6 +98,15 @@ module Reissue
     # Set this to :branch to push to a new branch.
     attr_accessor :push_reissue
 
+    # Optional regex pattern for matching version tags.
+    # Must include a capture group for the version number.
+    # Examples:
+    #   - /^v(\d+\.\d+\.\d+.*)$/ matches "v1.2.3" (default)
+    #   - /^myapp-v(\d+\.\d+\.\d+.*)$/ matches "myapp-v1.2.3"
+    #   - /^qualified-v(\d+\.\d+\.\d+.*)$/ matches "qualified-v0.3.5"
+    # Default: nil (uses default pattern matching "v1.2.3")
+    attr_accessor :tag_pattern
+
     def initialize(name = :reissue, formatter: Reissue, tasker: Rake::Task)
       @name = name
       @formatter = formatter
@@ -116,6 +125,7 @@ module Reissue
       @version_limit = 2
       @version_redo_proc = nil
       @push_reissue = :branch
+      @tag_pattern = nil
     end
 
     attr_reader :formatter, :tasker
@@ -262,7 +272,7 @@ module Reissue
       task "#{name}:preview" do
         if fragment
           require_relative "fragment_handler"
-          handler = Reissue::FragmentHandler.for(fragment)
+          handler = Reissue::FragmentHandler.for(fragment, tag_pattern: tag_pattern)
 
           # Show comparison tag for git trailers
           if fragment == :git && handler.respond_to?(:last_tag)
@@ -329,7 +339,7 @@ module Reissue
         require_relative "fragment_handler"
         require_relative "version_updater"
 
-        handler = Reissue::FragmentHandler.for(:git)
+        handler = Reissue::FragmentHandler.for(:git, tag_pattern: tag_pattern)
 
         # Get current version from version file
         version_content = File.read(version_file)

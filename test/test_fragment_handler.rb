@@ -31,6 +31,11 @@ class TestFragmentHandler < Minitest::Test
     assert_instance_of Reissue::FragmentHandler::GitFragmentHandler, handler
   end
 
+  def test_for_method_passes_tag_pattern_to_git_handler
+    handler = Reissue::FragmentHandler.for(:git, tag_pattern: /^myapp-v(\d+\.\d+\.\d+.*)$/)
+    assert_instance_of Reissue::FragmentHandler::GitFragmentHandler, handler
+  end
+
   def test_for_method_with_invalid_type_raises_argument_error
     error = assert_raises(ArgumentError) do
       Reissue::FragmentHandler.for(123)
