@@ -110,25 +110,33 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit any uncommitted changes
+      - name: Commit any uncommitted changes and create branch
         if: steps.release_branch.outputs.changed == 'false'
+        id: manual_branch
         run: |
           git add -A
           if ! git diff --cached --quiet; then
+            branch_name="post-release/$(date +%Y%m%d%H%M%S)"
+            git checkout -b "$branch_name"
             git commit -m "Bump version for next release"
+            echo "branch=$branch_name" >> $GITHUB_OUTPUT
+            echo "created=true" >> $GITHUB_OUTPUT
+          else
+            echo "created=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Push and create PR
-        if: steps.release_branch.outputs.changed == 'true'
+        if: steps.release_branch.outputs.changed == 'true' || steps.manual_branch.outputs.created == 'true'
         run: |
-          git push -u origin ${{ steps.release_branch.outputs.branch }}
+          if [ "${{ steps.release_branch.outputs.changed }}" == "true" ]; then
+            branch="${{ steps.release_branch.outputs.branch }}"
+          else
+            branch="${{ steps.manual_branch.outputs.branch }}"
+          fi
+          git push -u origin "$branch"
           gh pr create \
             --title "Bump version for next release" \
             --body "Post-release version bump created by reissue rake task." \
             --base ${{ github.event.repository.default_branch }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Push to default branch
-        if: steps.release_branch.outputs.changed == 'false'
-        run: git push origin ${{ github.event.repository.default_branch }}
