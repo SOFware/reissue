@@ -19,5 +19,3 @@ Reissue::Task.create :reissue do |task|
   task.fragment = :git  # Use git trailers for changelog entries
   task.push_finalize = :branch
 end
-
-Rake.application.options.trace = true
