@@ -193,6 +193,7 @@ module Reissue
         bump_message = "Bump version to #{new_version}"
         if commit
           if reissue_version_with_branch?
+            tasker["#{name}:branch"].reenable
             tasker["#{name}:branch"].invoke("reissue/#{new_version}")
           end
           run_command("git commit -m '#{bump_message}'", "Failed to commit version bump")
