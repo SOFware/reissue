@@ -374,3 +374,75 @@ module Reissue
     end
   end
 end
+
+# Define the reissue:initialize task as a standalone task
+# This works without any configuration, allowing users to bootstrap their project
+namespace :reissue do
+  desc "Initialize reissue by creating a CHANGELOG.md and showing Rakefile configuration"
+  task :initialize do
+    changelog_file = "CHANGELOG.md"
+
+    if File.exist?(changelog_file)
+      puts "✓ #{changelog_file} already exists"
+    else
+      Reissue.generate_changelog(changelog_file)
+      puts "✓ Created #{changelog_file}"
+    end
+
+    puts
+    puts "Add the following to your Rakefile to enable reissue tasks:"
+    puts
+    puts <<~RAKEFILE
+      require "reissue/rake"
+
+      Reissue::Task.create :reissue do |task|
+        task.version_file = "lib/your_gem/version.rb"  # Required: path to your VERSION constant
+      end
+    RAKEFILE
+
+    puts
+    puts "Optional configuration:"
+    puts
+    puts <<~OPTIONS
+      Reissue::Task.create :reissue do |task|
+        task.version_file = "lib/your_gem/version.rb"
+
+        # Changelog options
+        task.changelog_file = "CHANGELOG.md"      # Default: "CHANGELOG.md"
+        task.version_limit = 2                    # Versions to keep in changelog
+
+        # Fragment handling for changelog entries
+        task.fragment = :git                      # Use git commit trailers (Added:, Fixed:, etc.)
+        # task.fragment = "changelog_fragments"   # Or use a directory of fragment files
+        task.clear_fragments = false              # Clear fragment files after release. Not necessary when using git trailers.
+
+        # Git workflow options
+        task.commit = true                        # Auto-commit version bumps
+        task.commit_finalize = true               # Auto-commit changelog finalization
+        task.push_reissue = :branch               # Push strategy: false, true, or :branch
+        task.push_finalize = false                # Push after finalize: false, true, or :branch
+
+        # Custom tag pattern for version detection (must include capture group)
+        # task.tag_pattern = /^myapp-v(\\d+\\.\\d+\\.\\d+.*)$/
+      end
+    OPTIONS
+
+    puts
+    puts "For Ruby gems, use reissue/gem for automatic integration with bundler tasks:"
+    puts
+    puts <<~GEM_USAGE
+      require "reissue/gem"
+
+      Reissue::Task.create :reissue do |task|
+        task.version_file = "lib/your_gem/version.rb"
+        task.fragment = :git
+      end
+    GEM_USAGE
+
+    puts
+    puts "This automatically runs reissue:bump and reissue:finalize before `rake build`"
+    puts "and runs reissue after `rake release`."
+    puts
+    puts "Run `rake -T reissue` to see all available tasks after configuration."
+  end
+end
