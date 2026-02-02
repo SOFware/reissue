@@ -18,6 +18,10 @@ on:
         required: false
         type: boolean
         default: false
+      ruby_version:
+        description: 'Ruby version to use (defaults to .ruby-version or .tool-versions file)'
+        required: false
+        type: string
     outputs:
       version:
         description: 'The version that was released'
@@ -50,6 +54,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: ${{ inputs.ruby_version }}
           bundler-cache: true
 
       - name: Configure Bundler
