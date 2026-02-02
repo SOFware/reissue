@@ -62,38 +62,20 @@ jobs:
 
       - name: Record starting branch
         id: start
-        run: |
-          echo "=== Git state before finalize ==="
-          echo "branch=$(git branch --show-current)" >> $GITHUB_OUTPUT
-          git branch --show-current
-          git log --oneline -3
-          git status
-
-      - name: Debug state after finalize
-        if: always()
-        run: |
-          echo "=== Git state after finalize ==="
-          git branch --show-current
-          git branch -a
-          git log --oneline -3
-          git status
-          ls -la pkg/ || echo "No pkg directory"
-
-      - name: Check for branch change after finalize
-        id: finalize_branch
-        run: |
-          current_branch=$(git branch --show-current)
-          echo "branch=$current_branch" >> $GITHUB_OUTPUT
-          if [ "${{ steps.start.outputs.branch }}" != "$current_branch" ]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
+        run: echo "branch=$(git branch --show-current)" >> $GITHUB_OUTPUT
 
       - name: Get version being released
         id: version
         run: |
-          version=$(ls pkg/*.gem | head -1 | sed 's/.*-\([0-9][^-]*\)\.gem/\1/')
+          # Try common version file locations
+          if ls lib/*/version.rb 1>/dev/null 2>&1; then
+            version=$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9.]*' lib/*/version.rb | head -1)
+          elif [ -f VERSION ]; then
+            version=$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9.]*' VERSION | head -1)
+          else
+            # Fall back to gemspec evaluation
+            version=$(ruby -e "require 'rubygems'; spec = Gem::Specification.load(Dir['*.gemspec'].first); puts spec.version")
+          fi
           echo "released=$version" >> $GITHUB_OUTPUT
 
       - name: Release gem to RubyGems
@@ -109,7 +91,7 @@ jobs:
         run: |
           current_branch=$(git branch --show-current)
           echo "branch=$current_branch" >> $GITHUB_OUTPUT
-          if [ "${{ steps.finalize_branch.outputs.branch }}" != "$current_branch" ]; then
+          if [ "${{ steps.start.outputs.branch }}" != "$current_branch" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
