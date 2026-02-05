@@ -22,6 +22,11 @@ on:
         description: 'Ruby version to use (defaults to .ruby-version or .tool-versions file)'
         required: false
         type: string
+      working_directory:
+        description: 'Directory containing the gem (for monorepos)'
+        required: false
+        type: string
+        default: '.'
     outputs:
       version:
         description: 'The version that was released'
@@ -69,8 +74,10 @@ jobs:
               fi
             done
           fi
+          working-directory: ${{ inputs.working_directory }}
 
       - name: Configure Bundler
+        working-directory: ${{ inputs.working_directory }}
         run: bundle config set frozen false
 
       - name: Install dependencies
@@ -87,6 +94,7 @@ jobs:
 
       - name: Debug state after finalize
         if: always()
+        working-directory: ${{ inputs.working_directory }}
         run: |
           echo "=== Git state after finalize ==="
           git branch --show-current
@@ -108,16 +116,28 @@ jobs:
 
       - name: Get version being released
         id: version
+        working-directory: ${{ inputs.working_directory }}
         run: |
           version=$(ls pkg/*.gem | head -1 | sed 's/.*-\([0-9][^-]*\)\.gem/\1/')
           echo "released=$version" >> $GITHUB_OUTPUT
 
+      - name: Configure trusted publishing credentials
+        if: inputs.dry_run != true
+        uses: rubygems/configure-rubygems-credentials@v1.0.0
+
       - name: Release gem to RubyGems
         if: inputs.dry_run != true
-        uses: rubygems/release-gem@v1
+        working-directory: ${{ inputs.working_directory }}
+        run: bundle exec rake release
+
+      - name: Wait for release to propagate
+        if: inputs.dry_run != true
+        working-directory: ${{ inputs.working_directory }}
+        run: gem exec rubygems-await pkg/*.gem
 
       - name: Dry run - skip RubyGems publish
         if: inputs.dry_run == true
+        working-directory: ${{ inputs.working_directory }}
         run: echo "Dry run - would publish version ${{ steps.version.outputs.released }} to RubyGems"
 
       - name: Check for branch change after release
@@ -134,8 +154,9 @@ jobs:
       - name: Commit any uncommitted changes and create branch
         if: steps.release_branch.outputs.changed == 'false'
         id: manual_branch
+        working-directory: ${{ inputs.working_directory }}
         run: |
-          git add -A
+          git add -A .
           if ! git diff --cached --quiet; then
             branch_name="post-release/$(date +%Y%m%d%H%M%S)"
             git checkout -b "$branch_name"
