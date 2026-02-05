@@ -52,13 +52,29 @@ jobs:
           fetch-tags: true
 
       - name: Set up Ruby
+        id: setup-ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ inputs.ruby_version }}
-          bundler-cache: true
+          bundler-cache: false
+
+      - name: Fix Ruby 4.x bundler permissions
+        run: |
+          ruby_version="${{ steps.setup-ruby.outputs.ruby-version }}"
+          gems_dir="$RUNNER_TOOL_CACHE/Ruby/${ruby_version}/x64/lib/ruby/gems"
+          if [ -d "$gems_dir" ]; then
+            for dir in "$gems_dir"/*; do
+              if [ -d "$dir" ]; then
+                chmod +t "$dir" 2>/dev/null || true
+              fi
+            done
+          fi
 
       - name: Configure Bundler
         run: bundle config set frozen false
+
+      - name: Install dependencies
+        run: bundle install
 
       - name: Record starting branch
         id: start
