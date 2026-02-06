@@ -175,6 +175,14 @@ module Reissue
       !status.success?
     end
 
+    # Stage updated_paths that exist on disk.
+    def stage_updated_paths
+      existing = updated_paths.select { |p| File.exist?(p) }
+      if existing.any?
+        run_command("git add #{existing.join(" ")}", "Failed to stage additional paths: #{existing.join(", ")}")
+      end
+    end
+
     def define
       desc description
       task name, [:segment] do |task, args|
@@ -192,9 +200,7 @@ module Reissue
         tasker["#{name}:clear_fragments"].invoke
 
         run_command("git add -u", "Failed to stage updated files")
-        if updated_paths&.any?
-          run_command("git add #{updated_paths.join(" ")}", "Failed to stage additional paths: #{updated_paths.join(", ")}")
-        end
+        stage_updated_paths
 
         bump_message = "Bump version to #{new_version}"
         if commit
@@ -240,9 +246,7 @@ module Reissue
             tasker["#{name}:branch"].invoke("finalize/#{version}")
           end
           run_command("git add -u", "Failed to stage finalized changelog")
-          if updated_paths&.any?
-            run_command("git add #{updated_paths.join(" ")}", "Failed to stage additional paths: #{updated_paths.join(", ")}")
-          end
+          stage_updated_paths
           if changes_to_commit?
             run_command("git commit -m '#{finalize_message}'", "Failed to commit finalized changelog")
             tasker["#{name}:push"].invoke if push_finalize?
