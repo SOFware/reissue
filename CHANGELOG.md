@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.4.12] - Unreleased
+
 ## [0.4.11] - 2026-02-06
 
 ### Added
@@ -23,5 +25,3 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Checksums not staged during finalize task (307939e)
 - Stage updated_paths fails when files do not exist (16b801e)
 - Release workflow fails with working-directory command not found (9068f04)
-
-## [0.4.10] - 2026-01-27
