@@ -169,6 +169,12 @@ module Reissue
       end
     end
 
+    # Check if there are staged changes ready to commit.
+    def changes_to_commit?
+      _, _, status = Open3.capture3("git diff --cached --quiet")
+      !status.success?
+    end
+
     def define
       desc description
       task name, [:segment] do |task, args|
@@ -234,8 +240,15 @@ module Reissue
             tasker["#{name}:branch"].invoke("finalize/#{version}")
           end
           run_command("git add -u", "Failed to stage finalized changelog")
-          run_command("git commit -m '#{finalize_message}'", "Failed to commit finalized changelog")
-          tasker["#{name}:push"].invoke if push_finalize?
+          if updated_paths&.any?
+            run_command("git add #{updated_paths.join(" ")}", "Failed to stage additional paths: #{updated_paths.join(", ")}")
+          end
+          if changes_to_commit?
+            run_command("git commit -m '#{finalize_message}'", "Failed to commit finalized changelog")
+            tasker["#{name}:push"].invoke if push_finalize?
+          else
+            puts finalize_message
+          end
         else
           puts finalize_message
         end
