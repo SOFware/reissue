@@ -64,6 +64,7 @@ jobs:
           bundler-cache: false
 
       - name: Fix Ruby 4.x bundler permissions
+        working-directory: ${{ inputs.working_directory }}
         run: |
           ruby_version="${{ steps.setup-ruby.outputs.ruby-version }}"
           gems_dir="$RUNNER_TOOL_CACHE/Ruby/${ruby_version}/x64/lib/ruby/gems"
@@ -74,7 +75,6 @@ jobs:
               fi
             done
           fi
-          working-directory: ${{ inputs.working_directory }}
 
       - name: Configure Bundler
         working-directory: ${{ inputs.working_directory }}
