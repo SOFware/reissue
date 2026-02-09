@@ -60,6 +60,28 @@ Additional tasks (usually run automatically):
 - `rake reissue:preview` - Preview changelog entries from fragments or git trailers
 - `rake reissue:clear_fragments` - Clear changelog fragments after release
 
+### Hoe Projects
+
+If you use [Hoe](https://github.com/seattlerb/hoe) for project management:
+
+```ruby
+Hoe.plugin :reissue
+
+Hoe.spec "my_gem" do
+  developer "Jane Doe", "jane@example.com"
+
+  self.reissue_version_file = "lib/my_gem/version.rb"
+  self.reissue_fragment = :git
+  self.reissue_push_finalize = :branch
+end
+```
+
+This hooks into Hoe's release lifecycle:
+- `prerelease` - Runs `reissue:bump` and `reissue:finalize` before release
+- `postrelease` - Runs `reissue` to bump version for the next development cycle
+
+All configuration options are available as `reissue_`-prefixed attributes (e.g., `reissue_version_file`, `reissue_changelog_file`). The version file defaults to `lib/#{name}/version.rb`.
+
 ### Non-Gem Projects
 
 For non-gem Ruby projects, add to your Rakefile:
