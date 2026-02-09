@@ -366,26 +366,32 @@ module Reissue
         # Get version from last git tag
         tag_version = handler.last_tag_version
 
-        # Only bump if current version matches tag version (hasn't been bumped yet)
-        if tag_version && current_version == tag_version
-          bump = handler.read_version_bump
+        bump = handler.read_version_bump
 
+        if tag_version && current_version == tag_version
           if bump
             updater = Reissue::VersionUpdater.new(version_file, version_redo_proc: version_redo_proc)
             updater.call(bump)
             puts "Version bumped (#{bump}) to #{updater.instance_variable_get(:@new_version)}"
           end
         elsif tag_version && current_version != tag_version
-          puts "Version already bumped (#{tag_version} → #{current_version}), skipping"
-        else
-          # No tag exists, check for version trailers anyway
-          bump = handler.read_version_bump
-
           if bump
             updater = Reissue::VersionUpdater.new(version_file, version_redo_proc: version_redo_proc)
-            updater.call(bump)
-            puts "Version bumped (#{bump}) to #{updater.instance_variable_get(:@new_version)}"
+            desired_version = updater.redo(tag_version, bump)
+
+            if desired_version > current_version
+              updater.call(bump)
+              puts "Version bumped (#{bump}) to #{updater.instance_variable_get(:@new_version)}"
+            else
+              puts "Version already bumped (#{tag_version} → #{current_version}), skipping"
+            end
+          else
+            puts "Version already bumped (#{tag_version} → #{current_version}), skipping"
           end
+        elsif bump
+          updater = Reissue::VersionUpdater.new(version_file, version_redo_proc: version_redo_proc)
+          updater.call(bump)
+          puts "Version bumped (#{bump}) to #{updater.instance_variable_get(:@new_version)}"
         end
       end
     end
