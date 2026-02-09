@@ -212,6 +212,58 @@ class TestRakeVersionBumpTask < Minitest::Test
     end
   end
 
+  def test_bump_with_minor_trailer_when_version_already_differs_from_tag
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        # Release v1.2.2, then post-release bumps version to 1.2.3
+        setup_git_repo_with_version("1.2.2")
+        File.write("version.rb", 'VERSION = "1.2.3"')
+        system("git add version.rb", out: File::NULL, err: File::NULL)
+        system("git commit -m 'Bump version to 1.2.3'", out: File::NULL, err: File::NULL)
+
+        # A commit with a minor version trailer lands before the next release
+        create_commit_with_trailer("New feature", "Version: minor")
+
+        create_rakefile
+        load "Rakefile"
+
+        output, _err = capture_io { Rake::Task["reissue:bump"].invoke }
+
+        version_content = File.read("version.rb")
+
+        # reissue:bump should honor the trailer: minor(v1.2.2) = 1.3.0
+        assert_match(/VERSION = "1.3.0"/, version_content)
+        assert_match(/Version bumped \(minor\) to 1\.3\.0/, output)
+      end
+    end
+  end
+
+  def test_bump_with_patch_trailer_when_version_already_matches_skips
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        # Release v1.2.2, then post-release bumps version to 1.2.3
+        setup_git_repo_with_version("1.2.2")
+        File.write("version.rb", 'VERSION = "1.2.3"')
+        system("git add version.rb", out: File::NULL, err: File::NULL)
+        system("git commit -m 'Bump version to 1.2.3'", out: File::NULL, err: File::NULL)
+
+        # A commit with a patch trailer — but patch(v1.2.2) = 1.2.3 which is already set
+        create_commit_with_trailer("Bug fix", "Version: patch")
+
+        create_rakefile
+        load "Rakefile"
+
+        output, _err = capture_io { Rake::Task["reissue:bump"].invoke }
+
+        version_content = File.read("version.rb")
+
+        # Version is already correct, so bump should be skipped
+        assert_match(/VERSION = "1.2.3"/, version_content)
+        assert_match(/Version already bumped.*skipping/, output)
+      end
+    end
+  end
+
   private
 
   def setup_git_repo_with_version(version)
