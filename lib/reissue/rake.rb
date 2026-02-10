@@ -466,6 +466,19 @@ namespace :reissue do
     puts "This automatically runs reissue:bump and reissue:finalize before `rake build`"
     puts "and runs reissue after `rake release`."
     puts
+    puts "For Hoe-based projects, use the Hoe plugin:"
+    puts
+    puts <<~HOE_USAGE
+      Hoe.plugin :reissue
+
+      Hoe.spec "your_gem" do
+        self.reissue_version_file = "lib/your_gem/version.rb"
+        self.reissue_fragment = :git
+      end
+    HOE_USAGE
+    puts
+    puts "This hooks into Hoe's prerelease and postrelease tasks."
+    puts
     puts "Run `rake -T reissue` to see all available tasks after configuration."
   end
 end
