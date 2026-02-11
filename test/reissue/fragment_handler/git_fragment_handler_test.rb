@@ -16,6 +16,7 @@ module Reissue
 
       def teardown
         @handler = nil
+        Reissue.changelog_sections = Reissue::DEFAULT_CHANGELOG_SECTIONS
       end
 
       def test_initialization

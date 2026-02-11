@@ -7,6 +7,16 @@ require_relative "reissue/fragment_handler"
 
 # Reissue is a module that provides functionality for updating version numbers and changelogs.
 module Reissue
+  DEFAULT_CHANGELOG_SECTIONS = %w[Added Changed Deprecated Removed Fixed Security].freeze
+
+  def self.changelog_sections
+    @changelog_sections ||= DEFAULT_CHANGELOG_SECTIONS.dup
+  end
+
+  def self.changelog_sections=(sections)
+    @changelog_sections = Array(sections).map(&:capitalize).uniq
+  end
+
   # Updates the version number and changelog.
   #
   # @param version_file [String] The path to the version file.

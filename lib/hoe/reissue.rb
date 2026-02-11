@@ -7,6 +7,7 @@ module Hoe::Reissue
     :reissue_version_limit, :reissue_version_redo_proc,
     :reissue_fragment, :reissue_clear_fragments,
     :reissue_retain_changelogs, :reissue_tag_pattern,
+    :reissue_changelog_sections,
     :reissue_commit, :reissue_commit_finalize,
     :reissue_push_finalize, :reissue_push_reissue,
     :reissue_updated_paths
@@ -20,6 +21,7 @@ module Hoe::Reissue
     self.reissue_clear_fragments = false
     self.reissue_retain_changelogs = false
     self.reissue_tag_pattern = nil
+    self.reissue_changelog_sections = nil
     self.reissue_commit = true
     self.reissue_commit_finalize = true
     self.reissue_push_finalize = false
@@ -37,6 +39,7 @@ module Hoe::Reissue
       clear_fragments: reissue_clear_fragments,
       retain_changelogs: reissue_retain_changelogs,
       tag_pattern: reissue_tag_pattern,
+      changelog_sections: reissue_changelog_sections,
       commit: reissue_commit,
       commit_finalize: reissue_commit_finalize,
       push_finalize: reissue_push_finalize,

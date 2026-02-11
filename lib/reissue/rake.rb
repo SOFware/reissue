@@ -107,6 +107,11 @@ module Reissue
     # Default: nil (uses default pattern matching "v1.2.3")
     attr_accessor :tag_pattern
 
+    # The ordered list of valid changelog sections.
+    # Controls both validation (which sections are accepted) and ordering (how they appear).
+    # Default: nil (uses Reissue.changelog_sections)
+    attr_accessor :changelog_sections
+
     def initialize(name = :reissue, formatter: Reissue, tasker: Rake::Task)
       @name = name
       @formatter = formatter
@@ -126,6 +131,7 @@ module Reissue
       @version_redo_proc = nil
       @push_reissue = :branch
       @tag_pattern = nil
+      @changelog_sections = nil
     end
 
     attr_reader :formatter, :tasker
@@ -184,6 +190,8 @@ module Reissue
     end
 
     def define
+      Reissue.changelog_sections = changelog_sections if changelog_sections
+
       desc description
       task name, [:segment] do |task, args|
         segment = args[:segment] || "patch"
@@ -314,9 +322,8 @@ module Reissue
             end
           else
             puts "Changelog entries that will be added:\n\n"
-            # Sort sections in Keep a Changelog order
-            section_order = %w[Added Changed Deprecated Removed Fixed Security]
-            sorted_sections = entries.keys.sort_by { |k| section_order.index(k) || 999 }
+            # Sort sections in configured changelog order
+            sorted_sections = entries.keys.sort_by { |k| Reissue.changelog_sections.index(k) || 999 }
 
             sorted_sections.each do |section|
               items = entries[section]
@@ -444,6 +451,9 @@ namespace :reissue do
         task.commit_finalize = true               # Auto-commit changelog finalization
         task.push_reissue = :branch               # Push strategy: false, true, or :branch
         task.push_finalize = false                # Push after finalize: false, true, or :branch
+
+        # Custom changelog sections (controls validation and ordering)
+        # task.changelog_sections = %w[Added Changed Deprecated Removed Fixed Security]
 
         # Custom tag pattern for version detection (must include capture group)
         # task.tag_pattern = /^myapp-v(\\d+\\.\\d+\\.\\d+.*)$/

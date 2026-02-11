@@ -5,15 +5,13 @@ require "pathname"
 module Reissue
   # Handler for reading fragments from a directory
   class DirectoryFragmentHandler < FragmentHandler
-    DEFAULT_VALID_SECTIONS = %w[added changed deprecated removed fixed security].freeze
-
     attr_reader :directory, :valid_sections
 
     # Initialize the handler with a directory path
     #
     # @param directory [String] The path to the fragments directory
     # @param valid_sections [Array<String>, nil] List of valid section names, or nil to allow all
-    def initialize(directory, valid_sections: DEFAULT_VALID_SECTIONS)
+    def initialize(directory, valid_sections: Reissue.changelog_sections)
       @directory = directory
       @fragment_directory = Pathname.new(directory)
       @valid_sections = valid_sections

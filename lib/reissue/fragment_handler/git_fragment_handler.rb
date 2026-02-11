@@ -4,12 +4,6 @@ module Reissue
   class FragmentHandler
     # Handles reading changelog entries from git commit trailers
     class GitFragmentHandler < FragmentHandler
-      # Valid changelog sections that can be used as trailers
-      VALID_SECTIONS = %w[Added Changed Deprecated Removed Fixed Security].freeze
-
-      # Regex to match changelog section trailers in commit messages
-      TRAILER_REGEX = /^(#{VALID_SECTIONS.join("|")}):\s*(.+)$/i
-
       # Default pattern for matching version tags (e.g., "v1.2.3")
       DEFAULT_TAG_PATTERN = /^v(\d+\.\d+\.\d+.*)$/
 
@@ -75,6 +69,10 @@ module Reissue
       end
 
       private
+
+      def trailer_regex
+        /^(#{Reissue.changelog_sections.join("|")}):\s*(.+)$/io
+      end
 
       def git_available?
         system("git --version", out: File::NULL, err: File::NULL)
@@ -161,7 +159,7 @@ module Reissue
             i += 1
             next if line.strip.empty?
 
-            if (match = line.match(TRAILER_REGEX))
+            if (match = line.match(trailer_regex))
               section_name = normalize_section_name(match[1])
               trailer_value = match[2].strip
 
@@ -170,7 +168,7 @@ module Reissue
                 next_line = lines[i].rstrip
                 # Stop at empty line or another changelog trailer
                 break if next_line.strip.empty?
-                break if next_line.match(TRAILER_REGEX)
+                break if next_line.match(trailer_regex)
 
                 trailer_value += " #{next_line.strip}"
                 i += 1
