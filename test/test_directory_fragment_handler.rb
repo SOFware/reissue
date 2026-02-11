@@ -7,6 +7,10 @@ require "reissue/fragment_handler"
 require "reissue/fragment_handler/directory_fragment_handler"
 
 class TestDirectoryFragmentHandler < Minitest::Spec
+  after do
+    Reissue.changelog_sections = Reissue::DEFAULT_CHANGELOG_SECTIONS
+  end
+
   describe "read" do
     before do
       @tmpdir = Dir.mktmpdir
@@ -138,7 +142,7 @@ class TestDirectoryFragmentHandler < Minitest::Spec
     end
 
     it "exposes valid_sections as attribute" do
-      assert_equal Reissue::DirectoryFragmentHandler::DEFAULT_VALID_SECTIONS, @handler.valid_sections
+      assert_equal Reissue::DEFAULT_CHANGELOG_SECTIONS, @handler.valid_sections
 
       custom_handler = Reissue::DirectoryFragmentHandler.new(@fragment_dir, valid_sections: %w[test])
       assert_equal %w[test], custom_handler.valid_sections
@@ -195,7 +199,7 @@ class TestDirectoryFragmentHandler < Minitest::Spec
     it "creates handler via factory with default sections" do
       handler = Reissue::FragmentHandler.for(@fragment_dir)
       assert_instance_of Reissue::DirectoryFragmentHandler, handler
-      assert_equal Reissue::DirectoryFragmentHandler::DEFAULT_VALID_SECTIONS, handler.valid_sections
+      assert_equal Reissue::DEFAULT_CHANGELOG_SECTIONS, handler.valid_sections
     end
 
     it "creates handler via factory with custom sections" do

@@ -80,7 +80,7 @@ This hooks into Hoe's release lifecycle:
 - `prerelease` - Runs `reissue:bump` and `reissue:finalize` before release
 - `postrelease` - Runs `reissue` to bump version for the next development cycle
 
-All configuration options are available as `reissue_`-prefixed attributes (e.g., `reissue_version_file`, `reissue_changelog_file`). The version file defaults to `lib/#{name}/version.rb`.
+All configuration options are available as `reissue_`-prefixed attributes (e.g., `reissue_version_file`, `reissue_changelog_file`, `reissue_changelog_sections`). The version file defaults to `lib/#{name}/version.rb`.
 
 ### Non-Gem Projects
 
@@ -140,6 +140,11 @@ Reissue::Task.create :reissue do |task|
   # Note: Has no effect when using :git fragments
   task.clear_fragments = true
 
+  # Optional: Ordered list of valid changelog sections. Controls validation and display order.
+  # Defaults to: %w[Added Changed Deprecated Removed Fixed Security]
+  # Custom sections can be added; setting is idempotent (duplicates removed, names capitalized)
+  task.changelog_sections = %w[Major Added Changed Deprecated Removed Fixed Security]
+
   # Optional: Tag pattern for matching version tags. Defaults to /^v(\d+\.\d+\.\d+.*)$/
   # Must include a capture group for the version number.
   # Only applies when using :git fragments
@@ -193,13 +198,19 @@ Security: Rate limiting on login attempts"
 
 ### Supported Sections
 
-Git trailers use the standard Keep a Changelog sections:
+Git trailers use the standard [Keep a Changelog](http://keepachangelog.com/) sections by default:
 - `Added:` for new features
 - `Changed:` for changes in existing functionality
 - `Deprecated:` for soon-to-be removed features
 - `Removed:` for now removed features
 - `Fixed:` for any bug fixes
 - `Security:` for vulnerability fixes
+
+You can customize the valid sections with `changelog_sections`. This controls both which trailer names are recognized and the order sections appear in the changelog:
+
+```ruby
+task.changelog_sections = %w[Major Added Changed Deprecated Removed Fixed Security]
+```
 
 ### How It Works
 
