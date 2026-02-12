@@ -268,6 +268,51 @@ module Reissue
         end
       end
 
+      def test_read_excludes_non_changelog_trailers_from_entries
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Fix a bug
+
+            Fixed: Something was broken
+            Co-Authored-By: Someone <someone@example.com>
+            Not-Normal: other text
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          result = handler.read
+
+          # Only the Fixed entry should appear, without trailer text appended
+          assert_equal 1, result.length, "Expected only one section but got: #{result.keys.inspect}"
+          assert_equal 1, result["Fixed"].length
+          assert_match(/^Something was broken \(\h{7}\)$/, result["Fixed"].first)
+          refute_match(/Co-Authored-By/, result["Fixed"].first)
+          refute_match(/Not-Normal/, result["Fixed"].first)
+        end
+      end
+
+      def test_read_excludes_non_changelog_trailers_between_changelog_trailers
+        with_test_git_repo do
+          create_commit_with_message <<~MSG
+            Multiple changes
+
+            Added: New feature
+            Co-Authored-By: Someone <someone@example.com>
+            Signed-off-by: Another <another@example.com>
+            Fixed: Bug fix
+            Not-Normal: should not appear
+          MSG
+
+          handler = Reissue::FragmentHandler::GitFragmentHandler.new
+          result = handler.read
+
+          assert_equal 2, result.length, "Expected two sections but got: #{result.keys.inspect}"
+          assert_equal 1, result["Added"].length
+          assert_equal 1, result["Fixed"].length
+          assert_match(/^New feature \(\h{7}\)$/, result["Added"].first)
+          assert_match(/^Bug fix \(\h{7}\)$/, result["Fixed"].first)
+        end
+      end
+
       def test_read_handles_security_section
         with_test_git_repo do
           create_commit_with_message <<~MSG
