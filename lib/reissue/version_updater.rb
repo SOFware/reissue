@@ -108,6 +108,19 @@ module Reissue
     VERSION_MATCH = /(?<major>\d+)\.(?<minor>[a-zA-Z\d]+)\.(?<patch>[a-zA-Z\d]+)(?<add>\.(?<pre>[a-zA-Z\d]+))?/
     def version_regex = VERSION_MATCH
 
+    RELEASE_DATE_MATCH = /RELEASE_DATE\s*=\s*"([^"]*)"/
+
+    def release_date_regex = RELEASE_DATE_MATCH
+
+    def update_release_date(date, version_file: @version_file)
+      body = File.read(@version_file)
+      return unless body.match?(release_date_regex)
+      updated = body.gsub(release_date_regex) do |match|
+        match.sub(/=\s*"[^"]*"/, "= \"#{date}\"")
+      end
+      File.write(version_file, updated)
+    end
+
     # Writes the updated version to the specified file.
     #
     # @param version_file [String] The version_file to the version file (optional, defaults to @version_file).
