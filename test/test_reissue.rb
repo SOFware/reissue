@@ -309,6 +309,31 @@ class TestReissue < Minitest::Spec
         end
       end
     end
+
+    it "updates RELEASE_DATE in version file on finalize" do
+      fixture_changelog = File.expand_path("fixtures/changelog.md", __dir__)
+      changelog_file = Tempfile.new
+      changelog_file << File.read(fixture_changelog)
+      changelog_file.close
+
+      version_file = Tempfile.new
+      version_file << "module MyGem\n  VERSION = \"0.1.2\"\n  RELEASE_DATE = \"Unreleased\"\nend\n"
+      version_file.close
+
+      Reissue.finalize("2026-02-24", changelog_file: changelog_file.path, version_file: version_file.path)
+
+      contents = File.read(version_file)
+      assert_match(/RELEASE_DATE = "2026-02-24"/, contents)
+    end
+
+    it "does not fail when version_file is not provided to finalize" do
+      fixture_changelog = File.expand_path("fixtures/changelog.md", __dir__)
+      changelog_file = Tempfile.new
+      changelog_file << File.read(fixture_changelog)
+      changelog_file.close
+
+      Reissue.finalize("2026-02-24", changelog_file: changelog_file.path)
+    end
   end
 
   describe ".reformat" do
