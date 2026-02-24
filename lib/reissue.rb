@@ -39,7 +39,8 @@ module Reissue
     version_limit: 2,
     version_redo_proc: nil,
     fragment: nil,
-    fragment_directory: nil
+    fragment_directory: nil,
+    tag_pattern: nil
   )
     # Handle deprecation
     if fragment_directory && !fragment
@@ -51,7 +52,7 @@ module Reissue
     new_version = version_updater.call(segment, version_file:)
     if changelog_file
       changelog_updater = ChangelogUpdater.new(changelog_file)
-      changelog_updater.call(new_version, date:, changes:, changelog_file:, version_limit:, retain_changelogs:, fragment:)
+      changelog_updater.call(new_version, date:, changes:, changelog_file:, version_limit:, retain_changelogs:, fragment:, tag_pattern:)
     end
     new_version
   end
@@ -64,7 +65,7 @@ module Reissue
   # @param fragment_directory [String] @deprecated Use fragment parameter instead
   #
   # @return [Array] The version number and release date.
-  def self.finalize(date = Date.today, changelog_file: "CHANGELOG.md", retain_changelogs: false, fragment: nil, fragment_directory: nil)
+  def self.finalize(date = Date.today, changelog_file: "CHANGELOG.md", retain_changelogs: false, fragment: nil, fragment_directory: nil, tag_pattern: nil)
     # Handle deprecation
     if fragment_directory && !fragment
       warn "[DEPRECATION] `fragment_directory` parameter is deprecated. Please use `fragment` instead."
@@ -90,7 +91,7 @@ module Reissue
         changelog_updater.write(changelog_file, retain_changelogs: false)
 
         # Get fragment changes
-        handler = FragmentHandler.for(fragment)
+        handler = FragmentHandler.for(fragment, tag_pattern:)
         fragment_changes = handler.read
 
         # Merge existing changes with fragment changes, deduplicating entries
