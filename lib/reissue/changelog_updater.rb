@@ -21,14 +21,14 @@ module Reissue
     # @param version_limit [Integer] The number of versions to keep (default: 2).
     # @param fragment [String] The fragment source configuration (default: nil).
     # @param fragment_directory [String] @deprecated Use fragment instead
-    def call(version, date: "Unreleased", changes: {}, changelog_file: @changelog_file, version_limit: 2, retain_changelogs: false, fragment: nil, fragment_directory: nil)
+    def call(version, date: "Unreleased", changes: {}, changelog_file: @changelog_file, version_limit: 2, retain_changelogs: false, fragment: nil, fragment_directory: nil, tag_pattern: nil)
       # Handle deprecation
       if fragment_directory && !fragment
         warn "[DEPRECATION] `fragment_directory` parameter is deprecated. Please use `fragment` instead."
         fragment = fragment_directory
       end
 
-      update(version, date:, changes:, version_limit:, fragment:)
+      update(version, date:, changes:, version_limit:, fragment:, tag_pattern:)
       write(changelog_file, retain_changelogs:)
 
       changelog
@@ -57,13 +57,13 @@ module Reissue
     # @param version_limit [Integer] The number of versions to keep (default: 2).
     # @param fragment [String] The fragment source configuration (default: nil).
     # @return [Hash] The updated changelog.
-    def update(version, date: "Unreleased", changes: {}, version_limit: 2, fragment: nil)
+    def update(version, date: "Unreleased", changes: {}, version_limit: 2, fragment: nil, tag_pattern: nil)
       @changelog = Parser.parse(File.read(@changelog_file))
 
       # Merge fragment changes if source is provided
       merged_changes = changes.dup
       if fragment
-        handler = FragmentHandler.for(fragment)
+        handler = FragmentHandler.for(fragment, tag_pattern:)
         fragment_changes = handler.read
         fragment_changes.each do |section, entries|
           merged_changes[section] ||= []
