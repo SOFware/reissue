@@ -50,6 +50,7 @@ module Reissue
 
     version_updater = VersionUpdater.new(version_file, version_redo_proc:)
     new_version = version_updater.call(segment, version_file:)
+    version_updater.update_release_date("Unreleased", version_file:)
     if changelog_file
       changelog_updater = ChangelogUpdater.new(changelog_file)
       changelog_updater.call(new_version, date:, changes:, changelog_file:, version_limit:, retain_changelogs:, fragment:, tag_pattern:)

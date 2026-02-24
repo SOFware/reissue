@@ -118,6 +118,28 @@ class TestReissue < Minitest::Spec
         end
       end
     end
+    it "resets RELEASE_DATE to Unreleased when bumping version" do
+      version_file = Tempfile.new
+      version_file << "module MyGem\n  VERSION = \"0.1.0\"\n  RELEASE_DATE = \"2026-02-24\"\nend\n"
+      version_file.close
+
+      Reissue.call(version_file:, segment: "patch", changelog_file: nil)
+
+      contents = File.read(version_file)
+      assert_match(/RELEASE_DATE = "Unreleased"/, contents)
+    end
+
+    it "does not fail when RELEASE_DATE is absent during bump" do
+      fixture = File.expand_path("fixtures/version.rb", __dir__)
+      version_file = Tempfile.new
+      version_file << File.read(fixture)
+      version_file.close
+
+      Reissue.call(version_file:, segment: "major", changelog_file: nil)
+
+      contents = File.read(version_file)
+      refute_match(/RELEASE_DATE/, contents)
+    end
   end
 
   describe ".finalize" do
