@@ -201,7 +201,8 @@ module Reissue
           changelog_file:,
           version_limit:,
           version_redo_proc:,
-          fragment: fragment
+          fragment: fragment,
+          tag_pattern:
         )
         bundle
 
@@ -245,7 +246,8 @@ module Reissue
           date,
           changelog_file:,
           retain_changelogs:,
-          fragment: fragment
+          fragment: fragment,
+          tag_pattern:
         )
         finalize_message = "Finalize the changelog for version #{version} on #{date}"
         if commit_finalize

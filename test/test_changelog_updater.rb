@@ -111,6 +111,115 @@ class TestChangelogUpdater < Minitest::Spec
     end
   end
 
+  describe "update with git fragments and tag_pattern" do
+    before do
+      @original_dir = Dir.pwd
+    end
+
+    after do
+      Dir.chdir(@original_dir)
+    end
+
+    it "forwards tag_pattern to the git fragment handler" do
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          setup_git_repo_with_custom_tag("v2026.02.A")
+
+          create_commit_with_trailer(
+            "New work", "Added: Post-release feature"
+          )
+
+          File.write("CHANGELOG.md", <<~MD)
+            # Changelog
+
+            ## [2026.02.A] - 2026-02-24
+
+            ### Added
+
+            - Initial release
+          MD
+
+          tag_pattern =
+            /^v(\d+\.\d+\.([A-Z]+|\d+))$/
+          updater = Reissue::ChangelogUpdater
+            .new("CHANGELOG.md")
+          updater.update(
+            "2026.02.B",
+            version_limit: 1,
+            fragment: :git,
+            tag_pattern:
+          )
+
+          changelog = updater.changelog
+          new_ver = changelog["versions"].first
+          added = new_ver.dig("changes", "Added") || []
+
+          assert added.any? { |e|
+            e.include?("Post-release feature")
+          }, "Should include post-tag entry"
+          refute added.any? { |e|
+            e.include?("Initial release")
+          }, "Should NOT include pre-tag entry"
+        end
+      end
+    end
+  end
+
+  describe "call with git fragments and tag_pattern" do
+    before do
+      @original_dir = Dir.pwd
+    end
+
+    after do
+      Dir.chdir(@original_dir)
+    end
+
+    it "forwards tag_pattern to the git fragment handler" do
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          setup_git_repo_with_custom_tag("v2026.02.A")
+
+          create_commit_with_trailer(
+            "New work", "Added: Post-release feature"
+          )
+
+          File.write("CHANGELOG.md", <<~MD)
+            # Changelog
+
+            ## [2026.02.A] - 2026-02-24
+
+            ### Added
+
+            - Initial release
+          MD
+
+          tag_pattern =
+            /^v(\d+\.\d+\.([A-Z]+|\d+))$/
+          updater = Reissue::ChangelogUpdater
+            .new("CHANGELOG.md")
+          updater.call(
+            "2026.02.B",
+            changelog_file: "CHANGELOG.md",
+            version_limit: 1,
+            fragment: :git,
+            tag_pattern:
+          )
+
+          contents = File.read("CHANGELOG.md")
+
+          assert_match(
+            /Post-release feature/, contents,
+            "Should include post-tag entry"
+          )
+          refute_match(
+            /Initial release/, contents,
+            "Should NOT include pre-tag entry"
+          )
+        end
+      end
+    end
+  end
+
   describe "update with fragments" do
     before do
       @file = File.expand_path("fixtures/changelog.md", __dir__)
@@ -215,6 +324,44 @@ class TestChangelogUpdater < Minitest::Spec
 
         - Tasks for automating the updates to version and changelog.
       FILE
+    end
+  end
+
+  private
+
+  def setup_git_repo_with_custom_tag(tag)
+    system("git init", out: File::NULL, err: File::NULL)
+    system(
+      "git config user.name 'Test User'",
+      out: File::NULL, err: File::NULL
+    )
+    system(
+      "git config user.email 'test@example.com'",
+      out: File::NULL, err: File::NULL
+    )
+    File.write("README.md", "Initial")
+    system("git add .", out: File::NULL, err: File::NULL)
+    system(
+      "git commit -m 'Initial release'",
+      out: File::NULL, err: File::NULL
+    )
+    system("git tag #{tag}")
+  end
+
+  def create_commit_with_trailer(subject, trailer)
+    filename = "test_#{Time.now.to_f}.txt"
+    File.write(filename, "content")
+    system(
+      "git add #{filename}",
+      out: File::NULL, err: File::NULL
+    )
+    Tempfile.create("commit_msg") do |f|
+      f.write("#{subject}\n\n#{trailer}")
+      f.flush
+      system(
+        "git commit -F #{f.path}",
+        out: File::NULL, err: File::NULL
+      )
     end
   end
 end

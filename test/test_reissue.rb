@@ -66,6 +66,58 @@ class TestReissue < Minitest::Spec
         assert_match(/New feature/, contents)
       end
     end
+
+    it "forwards tag_pattern to the git fragment handler" do
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          setup_git_repo_with_custom_tag("v2026.02.A")
+          create_commit_with_trailer(
+            "Post-release work",
+            "Added: New feature after release"
+          )
+
+          version_file = "lib/test/version.rb"
+          FileUtils.mkdir_p("lib/test")
+          File.write(version_file, <<~RUBY)
+            module Test
+              VERSION = "2026.02.A"
+            end
+          RUBY
+
+          changelog_file = "CHANGELOG.md"
+          File.write(changelog_file, <<~MD)
+            # Changelog
+
+            ## [2026.02.A] - 2026-02-24
+
+            ### Added
+
+            - Initial release
+          MD
+
+          tag_pattern =
+            /^v(\d+\.\d+\.([A-Z]+|\d+))$/
+          Reissue.call(
+            version_file:,
+            changelog_file:,
+            segment: "patch",
+            version_limit: 1,
+            fragment: :git,
+            tag_pattern:
+          )
+
+          contents = File.read(changelog_file)
+          assert_match(
+            /New feature after release/, contents,
+            "Should include post-tag trailer"
+          )
+          refute_match(
+            /Initial release/, contents,
+            "Should NOT include pre-tag entries"
+          )
+        end
+      end
+    end
   end
 
   describe ".finalize" do
@@ -192,6 +244,49 @@ class TestReissue < Minitest::Spec
       Reissue.finalize("2021-01-01", changelog_file: changelog_file.path, retain_changelogs: tempdir)
       assert File.exist?(File.join(tempdir, "0.1.2.md"))
     end
+
+    it "forwards tag_pattern to the git fragment handler" do
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          setup_git_repo_with_custom_tag("v2026.02.A")
+          create_commit_with_trailer(
+            "Post-release fix",
+            "Fixed: Bug found after release"
+          )
+
+          File.write("CHANGELOG.md", <<~MD)
+            # Changelog
+
+            ## [2026.02.B] - Unreleased
+
+            ## [2026.02.A] - 2026-02-24
+
+            ### Added
+
+            - Initial release
+          MD
+
+          tag_pattern =
+            /^v(\d+\.\d+\.([A-Z]+|\d+))$/
+          Reissue.finalize(
+            "2026-02-25",
+            changelog_file: "CHANGELOG.md",
+            fragment: :git,
+            tag_pattern:
+          )
+
+          contents = File.read("CHANGELOG.md")
+          assert_match(
+            /Bug found after release/, contents,
+            "Should include post-tag trailer"
+          )
+          assert_match(
+            /\[2026\.02\.B\] - 2026-02-25/, contents,
+            "Should be finalized with date"
+          )
+        end
+      end
+    end
   end
 
   describe ".reformat" do
@@ -274,6 +369,14 @@ class TestReissue < Minitest::Spec
     end
   end
 
+  def setup
+    @original_dir = Dir.pwd
+  end
+
+  def teardown
+    Dir.chdir(@original_dir)
+  end
+
   describe ".clear_fragments" do
     it "clears all fragment files in the directory" do
       Dir.mktmpdir do |tempdir|
@@ -308,6 +411,44 @@ class TestReissue < Minitest::Spec
     it "handles nil directory gracefully" do
       # Should not raise an error
       Reissue.clear_fragments(nil)
+    end
+  end
+
+  private
+
+  def setup_git_repo_with_custom_tag(tag)
+    system("git init", out: File::NULL, err: File::NULL)
+    system(
+      "git config user.name 'Test User'",
+      out: File::NULL, err: File::NULL
+    )
+    system(
+      "git config user.email 'test@example.com'",
+      out: File::NULL, err: File::NULL
+    )
+    File.write("README.md", "Initial")
+    system("git add .", out: File::NULL, err: File::NULL)
+    system(
+      "git commit -m 'Initial release'",
+      out: File::NULL, err: File::NULL
+    )
+    system("git tag #{tag}")
+  end
+
+  def create_commit_with_trailer(subject, trailer)
+    filename = "test_#{Time.now.to_f}.txt"
+    File.write(filename, "content")
+    system(
+      "git add #{filename}",
+      out: File::NULL, err: File::NULL
+    )
+    Tempfile.create("commit_msg") do |f|
+      f.write("#{subject}\n\n#{trailer}")
+      f.flush
+      system(
+        "git commit -F #{f.path}",
+        out: File::NULL, err: File::NULL
+      )
     end
   end
 end
