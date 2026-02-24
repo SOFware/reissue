@@ -379,6 +379,7 @@ module Reissue
           if bump
             updater = Reissue::VersionUpdater.new(version_file, version_redo_proc: version_redo_proc)
             updater.call(bump)
+            bundle
             puts "Version bumped (#{bump}) to #{updater.instance_variable_get(:@new_version)}"
           end
         elsif tag_version && current_version != tag_version
@@ -388,6 +389,7 @@ module Reissue
 
             if desired_version > current_version
               updater.call(bump)
+              bundle
               puts "Version bumped (#{bump}) to #{updater.instance_variable_get(:@new_version)}"
             else
               puts "Version already bumped (#{tag_version} → #{current_version}), skipping"
@@ -398,6 +400,7 @@ module Reissue
         elsif bump
           updater = Reissue::VersionUpdater.new(version_file, version_redo_proc: version_redo_proc)
           updater.call(bump)
+          bundle
           puts "Version bumped (#{bump}) to #{updater.instance_variable_get(:@new_version)}"
         end
       end

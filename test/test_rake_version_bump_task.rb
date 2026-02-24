@@ -238,6 +238,62 @@ class TestRakeVersionBumpTask < Minitest::Test
     end
   end
 
+  def test_bump_calls_bundle_when_tag_matches_current_version
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        setup_git_repo_with_version("1.2.3")
+        create_commit_with_trailer("Breaking change", "Version: major")
+
+        create_rakefile_with_bundle_tracking
+        load "Rakefile"
+
+        capture_io { Rake::Task["reissue:bump"].invoke }
+
+        assert_match(/VERSION = "2.0.0"/, File.read("version.rb"))
+        assert File.exist?("bundle_called"), "Expected bundle to be called after version bump"
+      end
+    end
+  end
+
+  def test_bump_calls_bundle_when_version_differs_from_tag
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        # Simulate post-release bump: tag is v1.2.2, version file is 1.2.3
+        setup_git_repo_with_version("1.2.2")
+        File.write("version.rb", 'VERSION = "1.2.3"')
+        system("git add version.rb", out: File::NULL, err: File::NULL)
+        system("git commit -m 'Bump version to 1.2.3'", out: File::NULL, err: File::NULL)
+
+        create_commit_with_trailer("Breaking change", "Version: major")
+
+        create_rakefile_with_bundle_tracking
+        load "Rakefile"
+
+        capture_io { Rake::Task["reissue:bump"].invoke }
+
+        assert_match(/VERSION = "2.0.0"/, File.read("version.rb"))
+        assert File.exist?("bundle_called"), "Expected bundle to be called after version bump"
+      end
+    end
+  end
+
+  def test_bump_does_not_call_bundle_when_no_version_trailer
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        setup_git_repo_with_version("1.2.3")
+        create_commit_with_trailer("Regular fix", "Fixed: Some bug")
+
+        create_rakefile_with_bundle_tracking
+        load "Rakefile"
+
+        capture_io { Rake::Task["reissue:bump"].invoke }
+
+        assert_match(/VERSION = "1.2.3"/, File.read("version.rb"))
+        refute File.exist?("bundle_called"), "Expected bundle NOT to be called when no version bump"
+      end
+    end
+  end
+
   def test_bump_with_patch_trailer_when_version_already_matches_skips
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
@@ -298,6 +354,21 @@ class TestRakeVersionBumpTask < Minitest::Test
       Reissue::Task.create :reissue do |task|
         task.version_file = "version.rb"
         task.fragment = :git
+      end
+    RUBY
+  end
+
+  def create_rakefile_with_bundle_tracking
+    File.write("Rakefile", <<~RUBY)
+      require "reissue/rake"
+
+      task = Reissue::Task.create :reissue do |t|
+        t.version_file = "version.rb"
+        t.fragment = :git
+      end
+
+      task.define_singleton_method(:bundle) do
+        File.write("bundle_called", "true")
       end
     RUBY
   end
