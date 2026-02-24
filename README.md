@@ -170,6 +170,28 @@ Reissue::Task.create :reissue do |task|
 end
 ```
 
+## Tracking Release Dates
+
+Reissue can automatically manage a `RELEASE_DATE` constant in your version file alongside `VERSION`. This is completely optional — if no `RELEASE_DATE` is present, nothing changes.
+
+### Opting In
+
+Add a `RELEASE_DATE` constant to your version file:
+
+```ruby
+module MyGem
+  VERSION = "0.1.0"
+  RELEASE_DATE = "Unreleased"
+end
+```
+
+### What Happens Automatically
+
+- **On finalize** (`rake build` / `rake reissue:finalize`): `RELEASE_DATE` is set to the actual release date (e.g., `"2024-06-15"`)
+- **On bump** (`rake reissue` / post-release): `RELEASE_DATE` is reset to `"Unreleased"`
+
+No configuration is needed — Reissue detects the constant and updates it automatically.
+
 ## Using Git Trailers for Changelog Entries
 
 Reissue can extract changelog entries directly from git commit messages using trailers. This keeps your changelog data close to the code changes.
