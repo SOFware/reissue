@@ -50,6 +50,7 @@ module Reissue
 
     version_updater = VersionUpdater.new(version_file, version_redo_proc:)
     new_version = version_updater.call(segment, version_file:)
+    version_updater.update_release_date("Unreleased", version_file:)
     if changelog_file
       changelog_updater = ChangelogUpdater.new(changelog_file)
       changelog_updater.call(new_version, date:, changes:, changelog_file:, version_limit:, retain_changelogs:, fragment:, tag_pattern:)
@@ -65,7 +66,7 @@ module Reissue
   # @param fragment_directory [String] @deprecated Use fragment parameter instead
   #
   # @return [Array] The version number and release date.
-  def self.finalize(date = Date.today, changelog_file: "CHANGELOG.md", retain_changelogs: false, fragment: nil, fragment_directory: nil, tag_pattern: nil)
+  def self.finalize(date = Date.today, changelog_file: "CHANGELOG.md", retain_changelogs: false, fragment: nil, fragment_directory: nil, tag_pattern: nil, version_file: nil)
     # Handle deprecation
     if fragment_directory && !fragment
       warn "[DEPRECATION] `fragment_directory` parameter is deprecated. Please use `fragment` instead."
@@ -118,6 +119,11 @@ module Reissue
 
     # Now finalize with the date
     changelog = changelog_updater.finalize(date:, changelog_file:, retain_changelogs:)
+
+    if version_file
+      version_updater = VersionUpdater.new(version_file)
+      version_updater.update_release_date(date.to_s, version_file:)
+    end
 
     changelog["versions"].first.slice("version", "date").values
   end

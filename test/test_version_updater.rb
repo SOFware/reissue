@@ -83,4 +83,38 @@ class TestVersionUpdater < Minitest::Spec
       end
     end
   end
+
+  describe "update_release_date" do
+    it "updates RELEASE_DATE in the version file" do
+      file = File.expand_path("fixtures/version_with_release_date.rb", __dir__)
+      tempfile = Tempfile.new
+      updater = Reissue::VersionUpdater.new(file)
+
+      updater.update_release_date("2026-02-24", version_file: tempfile.path)
+      contents = File.read(tempfile.path)
+      assert_match(/RELEASE_DATE = "2026-02-24"/, contents)
+    end
+
+    it "does nothing when RELEASE_DATE is not present" do
+      file = File.expand_path("fixtures/version.rb", __dir__)
+      tempfile = Tempfile.new
+      updater = Reissue::VersionUpdater.new(file)
+
+      updater.update_release_date("2026-02-24", version_file: tempfile.path)
+      contents = File.read(tempfile.path)
+      refute_match(/RELEASE_DATE/, contents)
+    end
+
+    it "preserves existing RELEASE_DATE format with empty string" do
+      file = File.expand_path("fixtures/version_with_release_date.rb", __dir__)
+      tempfile = Tempfile.new
+      tempfile << File.read(file).sub('RELEASE_DATE = "Unreleased"', 'RELEASE_DATE = ""')
+      tempfile.close
+      updater = Reissue::VersionUpdater.new(tempfile.path)
+
+      updater.update_release_date("2026-02-24", version_file: tempfile.path)
+      contents = File.read(tempfile.path)
+      assert_match(/RELEASE_DATE = "2026-02-24"/, contents)
+    end
+  end
 end

@@ -118,6 +118,28 @@ class TestReissue < Minitest::Spec
         end
       end
     end
+    it "resets RELEASE_DATE to Unreleased when bumping version" do
+      version_file = Tempfile.new
+      version_file << "module MyGem\n  VERSION = \"0.1.0\"\n  RELEASE_DATE = \"2026-02-24\"\nend\n"
+      version_file.close
+
+      Reissue.call(version_file:, segment: "patch", changelog_file: nil)
+
+      contents = File.read(version_file)
+      assert_match(/RELEASE_DATE = "Unreleased"/, contents)
+    end
+
+    it "does not fail when RELEASE_DATE is absent during bump" do
+      fixture = File.expand_path("fixtures/version.rb", __dir__)
+      version_file = Tempfile.new
+      version_file << File.read(fixture)
+      version_file.close
+
+      Reissue.call(version_file:, segment: "major", changelog_file: nil)
+
+      contents = File.read(version_file)
+      refute_match(/RELEASE_DATE/, contents)
+    end
   end
 
   describe ".finalize" do
@@ -286,6 +308,31 @@ class TestReissue < Minitest::Spec
           )
         end
       end
+    end
+
+    it "updates RELEASE_DATE in version file on finalize" do
+      fixture_changelog = File.expand_path("fixtures/changelog.md", __dir__)
+      changelog_file = Tempfile.new
+      changelog_file << File.read(fixture_changelog)
+      changelog_file.close
+
+      version_file = Tempfile.new
+      version_file << "module MyGem\n  VERSION = \"0.1.2\"\n  RELEASE_DATE = \"Unreleased\"\nend\n"
+      version_file.close
+
+      Reissue.finalize("2026-02-24", changelog_file: changelog_file.path, version_file: version_file.path)
+
+      contents = File.read(version_file)
+      assert_match(/RELEASE_DATE = "2026-02-24"/, contents)
+    end
+
+    it "does not fail when version_file is not provided to finalize" do
+      fixture_changelog = File.expand_path("fixtures/changelog.md", __dir__)
+      changelog_file = Tempfile.new
+      changelog_file << File.read(fixture_changelog)
+      changelog_file.close
+
+      Reissue.finalize("2026-02-24", changelog_file: changelog_file.path)
     end
   end
 

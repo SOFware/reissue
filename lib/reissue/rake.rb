@@ -247,7 +247,8 @@ module Reissue
           changelog_file:,
           retain_changelogs:,
           fragment: fragment,
-          tag_pattern:
+          tag_pattern:,
+          version_file:
         )
         finalize_message = "Finalize the changelog for version #{version} on #{date}"
         if commit_finalize
