@@ -55,6 +55,34 @@ class TestParser < Minitest::Spec
       )
     end
 
+    it "parses a changelog with an Unreleased version (no date)" do
+      changelog = <<~MD
+        # Changelog
+
+        All notable changes.
+
+        ## [Unreleased]
+
+        ### Added
+
+        - New feature in progress
+
+        ## [1.0.0] - 2026-01-01
+
+        ### Added
+
+        - Initial release
+      MD
+
+      changes = Reissue::Parser.parse(changelog)
+
+      assert_equal "Unreleased", changes.dig("versions", 0, "version")
+      assert_nil changes.dig("versions", 0, "date")
+      assert_equal ["New feature in progress"], changes.dig("versions", 0, "changes", "Added")
+      assert_equal "1.0.0", changes.dig("versions", 1, "version")
+      assert_equal "2026-01-01", changes.dig("versions", 1, "date")
+    end
+
     it "handles files without an empty last line" do
       changelog = File.read("test/fixtures/changelog.md").chomp
 
