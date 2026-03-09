@@ -77,6 +77,15 @@ module Reissue
       @new_version
     end
 
+    VERSION_STRING_MATCH = /VERSION\s*=\s*"[^"]*"/
+
+    def set_version(version_string, version_file: @version_file)
+      body = File.read(@version_file)
+      updated = body.gsub(VERSION_STRING_MATCH, "VERSION = \"#{version_string}\"")
+      File.write(version_file, updated)
+      version_string
+    end
+
     # A proc that can be used to redo the version string.
     attr_accessor :version_redo_proc
 
