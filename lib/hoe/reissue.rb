@@ -10,7 +10,7 @@ module Hoe::Reissue
     :reissue_changelog_sections,
     :reissue_commit, :reissue_commit_finalize,
     :reissue_push_finalize, :reissue_push_reissue,
-    :reissue_updated_paths
+    :reissue_updated_paths, :reissue_deferred_versioning
 
   def initialize_reissue
     self.reissue_version_file = "lib/#{name}/version.rb"
@@ -27,6 +27,7 @@ module Hoe::Reissue
     self.reissue_push_finalize = false
     self.reissue_push_reissue = :branch
     self.reissue_updated_paths = []
+    self.reissue_deferred_versioning = false
   end
 
   def define_reissue_tasks
@@ -44,7 +45,8 @@ module Hoe::Reissue
       commit_finalize: reissue_commit_finalize,
       push_finalize: reissue_push_finalize,
       push_reissue: reissue_push_reissue,
-      updated_paths: reissue_updated_paths
+      updated_paths: reissue_updated_paths,
+      deferred_versioning: reissue_deferred_versioning
     }
 
     Reissue::Task.create :reissue do
