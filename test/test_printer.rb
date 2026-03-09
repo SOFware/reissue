@@ -52,6 +52,30 @@ class TestPrinter < Minitest::Spec
       MARKDOWN
     end
 
+    it "prints Unreleased version without date suffix" do
+      changelog = {
+        "title" => "Changelog",
+        "preamble" => "This is a changelog.",
+        "versions" => [
+          {
+            "version" => "Unreleased",
+            "date" => nil
+          },
+          {
+            "version" => "1.0.0",
+            "date" => "2021-01-01",
+            "changes" => {
+              "Added" => ["New feature"]
+            }
+          }
+        ]
+      }
+      printer = Reissue::Printer.new(changelog)
+      result = printer.to_s
+      assert_match(/## \[Unreleased\]\n/, result)
+      refute_match(/## \[Unreleased\] -/, result)
+    end
+
     it "handles nil versions" do
       changelog = {}
       printer = Reissue::Printer.new(changelog)

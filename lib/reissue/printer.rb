@@ -24,7 +24,11 @@ module Reissue
         changes = data.fetch("changes") do
           {}
         end
-        version_string = "## [#{version}] - #{date}"
+        version_string = if version == "Unreleased" && date.nil?
+          "## [Unreleased]"
+        else
+          "## [#{version}] - #{date}"
+        end
         changes_string = changes.map do |section, section_changes|
           format_section(section, section_changes)
         end.join("\n\n")
