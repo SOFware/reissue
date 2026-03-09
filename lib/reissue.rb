@@ -58,6 +58,19 @@ module Reissue
     new_version
   end
 
+  def self.deferred_call(version_file:, changelog_file: "CHANGELOG.md", version_limit: 2, retain_changelogs: false, fragment: nil, tag_pattern: nil)
+    version_updater = VersionUpdater.new(version_file)
+    version_updater.set_version("Unreleased", version_file:)
+    version_updater.update_release_date("Unreleased", version_file:)
+
+    if changelog_file
+      changelog_updater = ChangelogUpdater.new(changelog_file)
+      changelog_updater.call("Unreleased", date: nil, changes: {}, changelog_file:, version_limit:, retain_changelogs:, fragment:, tag_pattern:)
+    end
+
+    "Unreleased"
+  end
+
   # Finalizes the changelog for an unreleased version to set the release date.
   #
   # @param date [String] The release date.

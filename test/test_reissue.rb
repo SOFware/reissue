@@ -424,6 +424,78 @@ class TestReissue < Minitest::Spec
     Dir.chdir(@original_dir)
   end
 
+  describe ".deferred_call" do
+    it "sets VERSION to Unreleased and adds Unreleased changelog entry" do
+      version_file = Tempfile.new
+      version_file << "module MyGem\n  VERSION = \"1.0.0\"\n  RELEASE_DATE = \"2026-03-01\"\nend\n"
+      version_file.close
+
+      changelog_file = Tempfile.new
+      changelog_file << <<~MD
+        # Changelog
+
+        All notable changes.
+
+        ## [1.0.0] - 2026-03-01
+
+        ### Added
+
+        - Initial release
+      MD
+      changelog_file.close
+
+      Reissue.deferred_call(version_file:, changelog_file:)
+
+      version_contents = File.read(version_file)
+      assert_match(/VERSION = "Unreleased"/, version_contents)
+      assert_match(/RELEASE_DATE = "Unreleased"/, version_contents)
+
+      changelog_contents = File.read(changelog_file)
+      assert_match(/## \[Unreleased\]\n/, changelog_contents)
+      refute_match(/## \[Unreleased\] -/, changelog_contents)
+      assert_match(/## \[1.0.0\] - 2026-03-01/, changelog_contents)
+    end
+
+    it "works without RELEASE_DATE in version file" do
+      version_file = Tempfile.new
+      version_file << "module MyGem\n  VERSION = \"1.0.0\"\nend\n"
+      version_file.close
+
+      changelog_file = Tempfile.new
+      changelog_file << <<~MD
+        # Changelog
+
+        All notable changes.
+
+        ## [1.0.0] - 2026-03-01
+
+        ### Added
+
+        - Initial release
+      MD
+      changelog_file.close
+
+      Reissue.deferred_call(version_file:, changelog_file:)
+
+      version_contents = File.read(version_file)
+      assert_match(/VERSION = "Unreleased"/, version_contents)
+
+      changelog_contents = File.read(changelog_file)
+      assert_match(/## \[Unreleased\]\n/, changelog_contents)
+    end
+
+    it "works without a changelog file" do
+      version_file = Tempfile.new
+      version_file << "module MyGem\n  VERSION = \"1.0.0\"\nend\n"
+      version_file.close
+
+      Reissue.deferred_call(version_file:, changelog_file: nil)
+
+      version_contents = File.read(version_file)
+      assert_match(/VERSION = "Unreleased"/, version_contents)
+    end
+  end
+
   describe ".clear_fragments" do
     it "clears all fragment files in the directory" do
       Dir.mktmpdir do |tempdir|
