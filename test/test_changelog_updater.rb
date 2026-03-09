@@ -45,6 +45,66 @@ class TestChangelogUpdater < Minitest::Spec
       contents = @changelog_updater.to_s
       assert_match(/\[1.0\.0\]/, contents)
     end
+
+    it "handles Unreleased as a version string" do
+      changelog_content = <<~MD
+        # Changelog
+
+        All notable changes.
+
+        ## [Unreleased]
+
+        ### Added
+
+        - Work in progress
+
+        ## [1.0.0] - 2026-01-01
+
+        ### Added
+
+        - Initial release
+      MD
+      tempfile = Tempfile.new
+      File.write(tempfile.path, changelog_content)
+      updater = Reissue::ChangelogUpdater.new(tempfile.path)
+
+      updater.finalize(date: "2026-03-06", changelog_file: tempfile.path)
+
+      contents = File.read(tempfile.path)
+      # Without resolved_version, Unreleased stays as version but gets no date suffix issue
+      # The key test is that it doesn't raise an error
+      refute_match(/## \[Unreleased\] - Unreleased/, contents)
+    end
+
+    it "replaces Unreleased version with resolved version on finalize" do
+      changelog_content = <<~MD
+        # Changelog
+
+        All notable changes.
+
+        ## [Unreleased]
+
+        ### Added
+
+        - Work in progress
+
+        ## [1.0.0] - 2026-01-01
+
+        ### Added
+
+        - Initial release
+      MD
+      tempfile = Tempfile.new
+      File.write(tempfile.path, changelog_content)
+      updater = Reissue::ChangelogUpdater.new(tempfile.path)
+
+      updater.finalize(date: "2026-03-06", changelog_file: tempfile.path, resolved_version: "1.1.0")
+
+      contents = File.read(tempfile.path)
+      assert_match(/\[1.1.0\] - 2026-03-06/, contents)
+      refute_match(/Unreleased/, contents)
+      assert_match(/Work in progress/, contents)
+    end
   end
 
   describe "update" do
