@@ -34,12 +34,19 @@ module Reissue
       changelog
     end
 
-    def finalize(date: Date.today, changelog_file: @changelog_file, retain_changelogs: false)
+    def finalize(date: Date.today, changelog_file: @changelog_file, retain_changelogs: false, resolved_version: nil)
       @changelog = Parser.parse(File.read(changelog_file))
 
       # find the highest version number and if it is unreleased, update the date
       version = latest_version
+      version_value = version["version"]
       version_date = version["date"]
+
+      # In deferred mode, resolved_version replaces "Unreleased" version string
+      if resolved_version && version_value == "Unreleased"
+        version["version"] = resolved_version
+      end
+
       if version_date.nil? || version_date == "Unreleased"
         changelog["versions"].find do |v|
           v["version"] == version["version"]
@@ -124,7 +131,9 @@ module Reissue
     private
 
     def latest_version
-      changelog["versions"].max_by { |v| ::Gem::Version.new(v["version"]) }
+      versioned, unversioned = changelog["versions"].partition { |v| v["version"] != "Unreleased" }
+      return unversioned.first if unversioned.any?
+      versioned.max_by { |v| ::Gem::Version.new(v["version"]) }
     end
   end
 end

@@ -107,6 +107,11 @@ module Reissue
     # Default: nil (uses default pattern matching "v1.2.3")
     attr_accessor :tag_pattern
 
+    # Whether to defer version bumping until finalize time. Default: false.
+    # When true, the reissue task sets VERSION to "Unreleased" instead of bumping,
+    # and the finalize task resolves the version from git tags + segment argument.
+    attr_accessor :deferred_versioning
+
     # The ordered list of valid changelog sections.
     # Controls both validation (which sections are accepted) and ordering (how they appear).
     # Default: nil (uses Reissue.changelog_sections)
@@ -132,6 +137,7 @@ module Reissue
       @push_reissue = :branch
       @tag_pattern = nil
       @changelog_sections = nil
+      @deferred_versioning = false
     end
 
     attr_reader :formatter, :tasker
@@ -194,16 +200,26 @@ module Reissue
 
       desc description
       task name, [:segment] do |task, args|
-        segment = args[:segment] || "patch"
-        new_version = formatter.call(
-          segment:,
-          version_file:,
-          changelog_file:,
-          version_limit:,
-          version_redo_proc:,
-          fragment: fragment,
-          tag_pattern:
-        )
+        if deferred_versioning
+          new_version = formatter.deferred_call(
+            version_file:,
+            changelog_file:,
+            version_limit:,
+            fragment: fragment,
+            tag_pattern:
+          )
+        else
+          segment = args[:segment] || "patch"
+          new_version = formatter.call(
+            segment:,
+            version_file:,
+            changelog_file:,
+            version_limit:,
+            version_redo_proc:,
+            fragment: fragment,
+            tag_pattern:
+          )
+        end
         bundle
 
         tasker["#{name}:clear_fragments"].invoke
@@ -211,11 +227,20 @@ module Reissue
         run_command("git add -u", "Failed to stage updated files")
         stage_updated_paths
 
-        bump_message = "Bump version to #{new_version}"
+        bump_message = if deferred_versioning
+          "Prepare for next development version"
+        else
+          "Bump version to #{new_version}"
+        end
         if commit
           if reissue_version_with_branch?
             tasker["#{name}:branch"].reenable
-            tasker["#{name}:branch"].invoke("reissue/#{new_version}")
+            branch_name = if deferred_versioning
+              "reissue/next"
+            else
+              "reissue/#{new_version}"
+            end
+            tasker["#{name}:branch"].invoke(branch_name)
           end
           run_command("git commit -m '#{bump_message}'", "Failed to commit version bump")
           tasker["#{name}:push"].invoke if push_reissue?
@@ -240,20 +265,45 @@ module Reissue
       end
 
       desc "Finalize the changelog for an unreleased version to set the release date."
-      task "#{name}:finalize", [:date] do |task, args|
-        date = args[:date] || Time.now.strftime("%Y-%m-%d")
-        version, date = formatter.finalize(
-          date,
-          changelog_file:,
-          retain_changelogs:,
-          fragment: fragment,
-          tag_pattern:,
-          version_file:
-        )
+      task "#{name}:finalize", [:version_or_segment, :date] do |task, args|
+        if deferred_versioning
+          version_or_segment = args[:version_or_segment]
+          date = args[:date] || Time.now.strftime("%Y-%m-%d")
+
+          version_arg = nil
+          segment_arg = nil
+          if version_or_segment&.match?(/^\d/)
+            version_arg = version_or_segment
+          elsif version_or_segment
+            segment_arg = version_or_segment
+          end
+
+          version, date = formatter.deferred_finalize(
+            date,
+            version: version_arg,
+            segment: segment_arg,
+            changelog_file:,
+            retain_changelogs:,
+            fragment: fragment,
+            tag_pattern:,
+            version_file:,
+            version_redo_proc:
+          )
+        else
+          date = args[:version_or_segment] || Time.now.strftime("%Y-%m-%d")
+          version, date = formatter.finalize(
+            date,
+            changelog_file:,
+            retain_changelogs:,
+            fragment: fragment,
+            tag_pattern:,
+            version_file:
+          )
+        end
+
         finalize_message = "Finalize the changelog for version #{version} on #{date}"
         if commit_finalize
           if finalize_with_branch?
-            # Use "finalize/" prefix for the version being released
             tasker["#{name}:branch"].invoke("finalize/#{version}")
           end
           run_command("git add -u", "Failed to stage finalized changelog")
@@ -361,6 +411,7 @@ module Reissue
 
       desc "Bump version based on git trailers"
       task "#{name}:bump" do
+        next if deferred_versioning
         # Only check for version trailers when using git fragments
         next unless fragment == :git
 

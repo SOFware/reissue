@@ -77,6 +77,15 @@ module Reissue
       @new_version
     end
 
+    def set_version(version_string, version_file: @version_file)
+      body = File.read(@version_file)
+      updated = body.gsub(release_version_regex) do |match|
+        match.sub(/=\s*"[^"]*"/, "= \"#{version_string}\"")
+      end
+      File.write(version_file, updated)
+      version_string
+    end
+
     # A proc that can be used to redo the version string.
     attr_accessor :version_redo_proc
 
@@ -108,8 +117,10 @@ module Reissue
     VERSION_MATCH = /(?<major>\d+)\.(?<minor>[a-zA-Z\d]+)\.(?<patch>[a-zA-Z\d]+)(?<add>\.(?<pre>[a-zA-Z\d]+))?/
     def version_regex = VERSION_MATCH
 
+    RELEASE_VERSION_MATCH = /VERSION\s*=\s*"([^"]*)"/
     RELEASE_DATE_MATCH = /RELEASE_DATE\s*=\s*"([^"]*)"/
 
+    def release_version_regex = RELEASE_VERSION_MATCH
     def release_date_regex = RELEASE_DATE_MATCH
 
     def update_release_date(date, version_file: @version_file)

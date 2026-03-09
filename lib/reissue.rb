@@ -58,6 +58,101 @@ module Reissue
     new_version
   end
 
+  def self.deferred_call(version_file:, changelog_file: "CHANGELOG.md", version_limit: 2, retain_changelogs: false, fragment: nil, tag_pattern: nil)
+    version_updater = VersionUpdater.new(version_file)
+    version_updater.set_version("Unreleased", version_file:)
+    version_updater.update_release_date("Unreleased", version_file:)
+
+    if changelog_file
+      changelog_updater = ChangelogUpdater.new(changelog_file)
+      changelog_updater.call("Unreleased", date: nil, changes: {}, changelog_file:, version_limit:, retain_changelogs:, fragment:, tag_pattern:)
+    end
+
+    "Unreleased"
+  end
+
+  def self.deferred_finalize(date = Date.today, version: nil, segment: nil, changelog_file: "CHANGELOG.md", retain_changelogs: false, fragment: nil, tag_pattern: nil, version_file: nil, version_redo_proc: nil)
+    resolved_version = if version&.match?(/^\d/)
+      version
+    elsif segment || version
+      seg = segment || version
+      resolved = resolve_version_from_tag(seg.to_s, tag_pattern: tag_pattern, version_redo_proc: version_redo_proc)
+      unless resolved
+        raise "Cannot determine next version. No git tags found and no explicit version provided. " \
+              "Usage: rake reissue:finalize[patch] or rake reissue:finalize[1.2.0]"
+      end
+      resolved
+    elsif fragment == :git
+      handler = FragmentHandler.for(:git, tag_pattern: tag_pattern)
+      bump = handler.read_version_bump
+      if bump
+        resolved = resolve_version_from_tag(bump.to_s, tag_pattern: tag_pattern, version_redo_proc: version_redo_proc)
+        unless resolved
+          raise "Cannot determine next version. No git tags found and no explicit version provided. " \
+                "Usage: rake reissue:finalize[patch] or rake reissue:finalize[1.2.0]"
+        end
+        resolved
+      else
+        raise "Cannot determine next version. No git tags found and no version argument provided. " \
+              "Usage: rake reissue:finalize[patch] or rake reissue:finalize[1.2.0]"
+      end
+    else
+      raise "Cannot determine next version. No version argument provided. " \
+            "Usage: rake reissue:finalize[patch] or rake reissue:finalize[1.2.0]"
+    end
+
+    if version_file
+      version_updater = VersionUpdater.new(version_file)
+      version_updater.set_version(resolved_version, version_file: version_file)
+      version_updater.update_release_date(date.to_s, version_file: version_file)
+    end
+
+    changelog_updater = ChangelogUpdater.new(changelog_file)
+
+    if fragment
+      changelog = Parser.parse(File.read(changelog_file))
+      unreleased = changelog["versions"].find { |v| v["version"] == "Unreleased" }
+
+      if unreleased
+        changelog["versions"].delete(unreleased)
+        changelog_updater.instance_variable_set(:@changelog, changelog)
+        changelog_updater.write(changelog_file, retain_changelogs: false)
+
+        handler = FragmentHandler.for(fragment, tag_pattern: tag_pattern)
+        fragment_changes = handler.read
+
+        merged_changes = (unreleased["changes"] || {}).dup
+        fragment_changes.each do |section, entries|
+          merged_changes[section] ||= []
+          entries.each do |entry|
+            merged_changes[section] << entry unless merged_changes[section].include?(entry)
+          end
+        end
+
+        changelog_updater.update(
+          "Unreleased",
+          date: nil,
+          changes: merged_changes,
+          fragment: nil,
+          version_limit: changelog["versions"].size + 1
+        )
+        changelog_updater.write(changelog_file, retain_changelogs: false)
+      end
+    end
+
+    changelog = changelog_updater.finalize(date: date, changelog_file: changelog_file, retain_changelogs: retain_changelogs, resolved_version: resolved_version)
+    changelog["versions"].first.slice("version", "date").values
+  end
+
+  private_class_method def self.resolve_version_from_tag(segment, tag_pattern: nil, version_redo_proc: nil)
+    handler = FragmentHandler.for(:git, tag_pattern: tag_pattern)
+    last_version = handler.last_tag_version
+    return nil unless last_version
+
+    updater = VersionUpdater.new(File::NULL, version_redo_proc: version_redo_proc)
+    updater.redo(last_version, segment).to_s
+  end
+
   # Finalizes the changelog for an unreleased version to set the release date.
   #
   # @param date [String] The release date.

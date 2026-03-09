@@ -424,6 +424,198 @@ class TestReissue < Minitest::Spec
     Dir.chdir(@original_dir)
   end
 
+  describe ".deferred_call" do
+    it "sets VERSION to Unreleased and adds Unreleased changelog entry" do
+      version_file = Tempfile.new
+      version_file << "module MyGem\n  VERSION = \"1.0.0\"\n  RELEASE_DATE = \"2026-03-01\"\nend\n"
+      version_file.close
+
+      changelog_file = Tempfile.new
+      changelog_file << <<~MD
+        # Changelog
+
+        All notable changes.
+
+        ## [1.0.0] - 2026-03-01
+
+        ### Added
+
+        - Initial release
+      MD
+      changelog_file.close
+
+      Reissue.deferred_call(version_file:, changelog_file:)
+
+      version_contents = File.read(version_file)
+      assert_match(/VERSION = "Unreleased"/, version_contents)
+      assert_match(/RELEASE_DATE = "Unreleased"/, version_contents)
+
+      changelog_contents = File.read(changelog_file)
+      assert_match(/## \[Unreleased\]\n/, changelog_contents)
+      refute_match(/## \[Unreleased\] -/, changelog_contents)
+      assert_match(/## \[1.0.0\] - 2026-03-01/, changelog_contents)
+    end
+
+    it "works without RELEASE_DATE in version file" do
+      version_file = Tempfile.new
+      version_file << "module MyGem\n  VERSION = \"1.0.0\"\nend\n"
+      version_file.close
+
+      changelog_file = Tempfile.new
+      changelog_file << <<~MD
+        # Changelog
+
+        All notable changes.
+
+        ## [1.0.0] - 2026-03-01
+
+        ### Added
+
+        - Initial release
+      MD
+      changelog_file.close
+
+      Reissue.deferred_call(version_file:, changelog_file:)
+
+      version_contents = File.read(version_file)
+      assert_match(/VERSION = "Unreleased"/, version_contents)
+
+      changelog_contents = File.read(changelog_file)
+      assert_match(/## \[Unreleased\]\n/, changelog_contents)
+    end
+
+    it "works without a changelog file" do
+      version_file = Tempfile.new
+      version_file << "module MyGem\n  VERSION = \"1.0.0\"\nend\n"
+      version_file.close
+
+      Reissue.deferred_call(version_file:, changelog_file: nil)
+
+      version_contents = File.read(version_file)
+      assert_match(/VERSION = "Unreleased"/, version_contents)
+    end
+  end
+
+  describe ".deferred_finalize" do
+    it "resolves version from explicit version string and finalizes" do
+      version_file = Tempfile.new
+      version_file << "module MyGem\n  VERSION = \"Unreleased\"\n  RELEASE_DATE = \"Unreleased\"\nend\n"
+      version_file.close
+
+      changelog_file = Tempfile.new
+      changelog_file << <<~MD
+        # Changelog
+
+        All notable changes.
+
+        ## [Unreleased]
+
+        ### Added
+
+        - New feature
+
+        ## [1.0.0] - 2026-03-01
+
+        ### Added
+
+        - Initial release
+      MD
+      changelog_file.close
+
+      version, date = Reissue.deferred_finalize(
+        "2026-03-06",
+        version: "1.1.0",
+        changelog_file: changelog_file.path,
+        version_file: version_file.path
+      )
+
+      assert_equal "1.1.0", version
+      assert_equal "2026-03-06", date
+
+      version_contents = File.read(version_file)
+      assert_match(/VERSION = "1.1.0"/, version_contents)
+      assert_match(/RELEASE_DATE = "2026-03-06"/, version_contents)
+
+      changelog_contents = File.read(changelog_file)
+      assert_match(/\[1.1.0\] - 2026-03-06/, changelog_contents)
+      refute_match(/Unreleased/, changelog_contents)
+      assert_match(/New feature/, changelog_contents)
+    end
+
+    it "resolves version from segment and git tag" do
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          setup_git_repo_with_custom_tag("v1.0.0")
+          create_commit_with_trailer("Add stuff", "Added: Cool feature")
+
+          version_file = "lib/test/version.rb"
+          FileUtils.mkdir_p("lib/test")
+          File.write(version_file, "module Test\n  VERSION = \"Unreleased\"\n  RELEASE_DATE = \"Unreleased\"\nend\n")
+
+          File.write("CHANGELOG.md", <<~MD)
+            # Changelog
+
+            All notable changes.
+
+            ## [Unreleased]
+
+            ### Added
+
+            - Manual entry
+
+            ## [1.0.0] - 2026-03-01
+
+            ### Added
+
+            - Initial release
+          MD
+
+          version, date = Reissue.deferred_finalize(
+            "2026-03-06",
+            segment: "minor",
+            changelog_file: "CHANGELOG.md",
+            version_file: version_file
+          )
+
+          assert_equal "1.1.0", version
+          assert_equal "2026-03-06", date
+
+          version_contents = File.read(version_file)
+          assert_match(/VERSION = "1.1.0"/, version_contents)
+        end
+      end
+    end
+
+    it "errors when no version can be determined" do
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          system("git init -q && git config user.name 'Test' && git config user.email 'test@test.com'", out: File::NULL, err: File::NULL)
+          File.write("README.md", "hi")
+          system("git add . && git commit -q -m 'init'", out: File::NULL, err: File::NULL)
+
+          version_file = "version.rb"
+          File.write(version_file, "module Test\n  VERSION = \"Unreleased\"\nend\n")
+
+          File.write("CHANGELOG.md", <<~MD)
+            # Changelog
+
+            ## [Unreleased]
+          MD
+
+          error = assert_raises(RuntimeError) do
+            Reissue.deferred_finalize(
+              "2026-03-06",
+              changelog_file: "CHANGELOG.md",
+              version_file: version_file
+            )
+          end
+
+          assert_match(/Cannot determine next version/, error.message)
+        end
+      end
+    end
+  end
+
   describe ".clear_fragments" do
     it "clears all fragment files in the directory" do
       Dir.mktmpdir do |tempdir|

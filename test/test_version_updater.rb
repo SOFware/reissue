@@ -84,6 +84,34 @@ class TestVersionUpdater < Minitest::Spec
     end
   end
 
+  describe "set_version" do
+    it "writes an arbitrary version string to the version file" do
+      file = File.expand_path("fixtures/version.rb", __dir__)
+      tempfile = Tempfile.new
+      tempfile << File.read(file)
+      tempfile.close
+      updater = Reissue::VersionUpdater.new(tempfile.path)
+
+      updater.set_version("Unreleased", version_file: tempfile.path)
+
+      contents = File.read(tempfile.path)
+      assert_match(/VERSION = "Unreleased"/, contents)
+    end
+
+    it "writes an arbitrary version string to a file with RELEASE_DATE" do
+      file = File.expand_path("fixtures/version_with_release_date.rb", __dir__)
+      tempfile = Tempfile.new
+      tempfile << File.read(file)
+      tempfile.close
+      updater = Reissue::VersionUpdater.new(tempfile.path)
+
+      updater.set_version("Unreleased", version_file: tempfile.path)
+
+      contents = File.read(tempfile.path)
+      assert_match(/VERSION = "Unreleased"/, contents)
+    end
+  end
+
   describe "update_release_date" do
     it "updates RELEASE_DATE in the version file" do
       file = File.expand_path("fixtures/version_with_release_date.rb", __dir__)
