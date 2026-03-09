@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.4.20] - Unreleased
+
 ## [0.4.19] - 2026-03-09
 
 ### Added
@@ -25,16 +27,3 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - set_version uses RELEASE_VERSION_MATCH paralleling RELEASE_DATE_MATCH pattern (efec0e5)
-
-## [0.4.18] - 2026-02-25
-
-### Added
-
-- RELEASE_DATE constant tracking in VersionUpdater (496ec6b)
-- Reset RELEASE_DATE to Unreleased when bumping version via Reissue.call (a7894cc)
-- Update RELEASE_DATE to actual date during Reissue.finalize (8253796)
-- RELEASE_DATE to the version.rb (6e08782)
-
-### Changed
-
-- Pass version_file to Reissue.finalize from rake task (83682ff)
