@@ -111,7 +111,11 @@ module Reissue
 
     if fragment
       changelog = Parser.parse(File.read(changelog_file))
-      unreleased = changelog["versions"].find { |v| v["version"] == "Unreleased" }
+      unreleased = changelog["versions"].find { |v|
+        v["version"] == "Unreleased" ||
+          v["date"].nil? ||
+          v["date"] == "Unreleased"
+      }
 
       if unreleased
         changelog["versions"].delete(unreleased)
