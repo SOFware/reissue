@@ -586,6 +586,48 @@ class TestReissue < Minitest::Spec
       end
     end
 
+    it "collects fragments when changelog has versioned entry with Unreleased date" do
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          setup_git_repo_with_custom_tag("v1.0.0")
+          create_commit_with_trailer("Add stuff", "Added: Cool feature")
+
+          version_file = "lib/test/version.rb"
+          FileUtils.mkdir_p("lib/test")
+          File.write(version_file, "module Test\n  VERSION = \"Unreleased\"\nend\n")
+
+          File.write("CHANGELOG.md", <<~MD)
+            # Changelog
+
+            All notable changes.
+
+            ## [1.0.0] - Unreleased
+
+            ## [0.9.0] - 2026-02-01
+
+            ### Added
+
+            - Old feature
+          MD
+
+          version, _date = Reissue.deferred_finalize(
+            "2026-03-06",
+            version: "1.1.0",
+            changelog_file: "CHANGELOG.md",
+            fragment: :git,
+            tag_pattern: /^v(\d+\.\d+\.\d+.*)$/,
+            version_file: version_file
+          )
+
+          assert_equal "1.1.0", version
+          changelog_contents = File.read("CHANGELOG.md")
+          assert_match(/Cool feature/, changelog_contents)
+          assert_match(/\[1.1.0\] - 2026-03-06/, changelog_contents)
+          refute_match(/Unreleased/, changelog_contents)
+        end
+      end
+    end
+
     it "errors when no version can be determined" do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
