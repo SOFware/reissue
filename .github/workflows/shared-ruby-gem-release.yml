@@ -85,34 +85,7 @@ jobs:
 
       - name: Record starting branch
         id: start
-        run: |
-          echo "=== Git state before finalize ==="
-          echo "branch=$(git branch --show-current)" >> $GITHUB_OUTPUT
-          git branch --show-current
-          git log --oneline -3
-          git status
-
-      - name: Debug state after finalize
-        if: always()
-        working-directory: ${{ inputs.working_directory }}
-        run: |
-          echo "=== Git state after finalize ==="
-          git branch --show-current
-          git branch -a
-          git log --oneline -3
-          git status
-          ls -la pkg/ || echo "No pkg directory"
-
-      - name: Check for branch change after finalize
-        id: finalize_branch
-        run: |
-          current_branch=$(git branch --show-current)
-          echo "branch=$current_branch" >> $GITHUB_OUTPUT
-          if [ "${{ steps.start.outputs.branch }}" != "$current_branch" ]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
+        run: echo "branch=$(git branch --show-current)" >> $GITHUB_OUTPUT
 
       - name: Get version being released
         id: version
@@ -145,7 +118,7 @@ jobs:
         run: |
           current_branch=$(git branch --show-current)
           echo "branch=$current_branch" >> $GITHUB_OUTPUT
-          if [ "${{ steps.finalize_branch.outputs.branch }}" != "$current_branch" ]; then
+          if [ "${{ steps.start.outputs.branch }}" != "$current_branch" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
