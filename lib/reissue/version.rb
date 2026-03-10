@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
 module Reissue
-  VERSION = "0.4.20"
-  RELEASE_DATE = "2026-03-10"
+  VERSION = "0.4.21"
+  RELEASE_DATE = "Unreleased"
 end
