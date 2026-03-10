@@ -2,5 +2,5 @@
 
 module Reissue
   VERSION = "0.4.20"
-  RELEASE_DATE = "Unreleased"
+  RELEASE_DATE = "2026-03-10"
 end
