@@ -29,7 +29,7 @@ module Reissue
         else
           "## [#{version}] - #{date}"
         end
-        changes_string = changes.map do |section, section_changes|
+        changes_string = sorted_change_pairs(changes).map do |section, section_changes|
           format_section(section, section_changes)
         end.join("\n\n")
         [version_string, changes_string].reject { |str| str.empty? }.join("\n\n")
@@ -48,6 +48,14 @@ module Reissue
 
         #{changes.map { |change| "- #{change}" }.join("\n")}
       MARKDOWN
+    end
+
+    # Keep section order aligned with rake / Reissue.changelog_sections (same rule as preview task).
+    def sorted_change_pairs(changes)
+      changes.sort_by do |section, _|
+        idx = Reissue.changelog_sections.index(section) || 999
+        [idx, section.to_s]
+      end
     end
   end
 end

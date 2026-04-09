@@ -87,5 +87,30 @@ class TestPrinter < Minitest::Spec
         ## [0.0.0] - Unreleased
       MARKDOWN
     end
+
+    it "orders change sections by Reissue.changelog_sections, not hash insertion order" do
+      saved = Reissue.changelog_sections.dup
+      Reissue.changelog_sections = %w[Security Fixed Added Changed]
+
+      changelog = {
+        "versions" => [
+          {
+            "version" => "1.0.0",
+            "date" => "2021-01-01",
+            "changes" => {
+              "Added" => ["feature"],
+              "Security" => ["cve"],
+              "Fixed" => ["bug"]
+            }
+          }
+        ]
+      }
+      printer = Reissue::Printer.new(changelog)
+      body = printer.to_s
+      assert_operator body.index("### Security"), :<, body.index("### Fixed")
+      assert_operator body.index("### Fixed"), :<, body.index("### Added")
+    ensure
+      Reissue.changelog_sections = saved
+    end
   end
 end
