@@ -44,6 +44,16 @@ module Reissue
         find_last_tag
       end
 
+      # Read runbook entries from git commit trailers
+      #
+      # @return [Array<String>] Runbook items with the short SHA appended
+      def read_runbook_entries
+        return [] unless git_available? && in_git_repo?
+
+        commits = commits_since_last_tag
+        parse_runbook_entries_from_commits(commits)
+      end
+
       # Read version bump from git commit trailers
       #
       # @return [Symbol, nil] One of :major, :minor, :patch, or nil if none found
@@ -183,6 +193,44 @@ module Reissue
         end
 
         result
+      end
+
+      RUNBOOK_TRAILER_REGEX = /^runbook:\s*(.+)$/i
+
+      def parse_runbook_entries_from_commits(commits)
+        entries = []
+
+        commits.each do |commit|
+          sha = commit[:sha]
+          lines = commit[:message].lines
+
+          i = 0
+          while i < lines.length
+            line = lines[i].rstrip
+            i += 1
+            next if line.strip.empty?
+
+            if (match = line.match(RUNBOOK_TRAILER_REGEX))
+              trailer_value = match[1].strip
+
+              # Collect continuation lines (non-empty lines that don't start a new trailer)
+              while i < lines.length
+                next_line = lines[i].rstrip
+                break if next_line.strip.empty?
+                break if next_line.match(RUNBOOK_TRAILER_REGEX)
+                break if next_line.match(trailer_regex)
+                break if next_line.match?(/^[A-Za-z][\w-]+:\s/)
+
+                trailer_value += " #{next_line.strip}"
+                i += 1
+              end
+
+              entries << "#{trailer_value} (#{sha})"
+            end
+          end
+        end
+
+        entries
       end
 
       def normalize_section_name(name)
