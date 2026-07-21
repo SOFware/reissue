@@ -87,21 +87,32 @@ jobs:
         id: start
         run: echo "branch=$(git branch --show-current)" >> $GITHUB_OUTPUT
 
-      - name: Get version being released
-        id: version
-        working-directory: ${{ inputs.working_directory }}
-        run: |
-          version=$(ls pkg/*.gem | head -1 | sed 's/.*-\([0-9][^-]*\)\.gem/\1/')
-          echo "released=$version" >> $GITHUB_OUTPUT
-
       - name: Configure trusted publishing credentials
         if: inputs.dry_run != true
         uses: rubygems/configure-rubygems-credentials@v2.1.0
 
+      # build:checksum and release share the same `build` prerequisite, so a
+      # single rake invocation builds once and writes checksums/ before pushing.
       - name: Release gem to RubyGems
         if: inputs.dry_run != true
         working-directory: ${{ inputs.working_directory }}
-        run: bundle exec rake release
+        run: bundle exec rake build:checksum release
+
+      # Must run after the build: the version is read from the gem that was
+      # actually produced, which reissue may have bumped during `build`.
+      - name: Get version being released
+        id: version
+        if: inputs.dry_run != true
+        working-directory: ${{ inputs.working_directory }}
+        run: |
+          gem_file=$(ls -t pkg/*.gem 2>/dev/null | head -1)
+          if [ -z "$gem_file" ]; then
+            echo "::error::No gem found in pkg/ - the release step did not build one"
+            exit 1
+          fi
+          version=$(ruby -e 'require "rubygems/package"; puts Gem::Package.new(ARGV[0]).spec.version' "$gem_file")
+          echo "released=$version" >> $GITHUB_OUTPUT
+          echo "Released version: $version"
 
       - name: Wait for release to propagate
         if: inputs.dry_run != true
@@ -111,7 +122,7 @@ jobs:
       - name: Dry run - skip RubyGems publish
         if: inputs.dry_run == true
         working-directory: ${{ inputs.working_directory }}
-        run: echo "Dry run - would publish version ${{ steps.version.outputs.released }} to RubyGems"
+        run: echo "Dry run - no gem was built and nothing was published. The version is not known until a real run builds the gem."
 
       - name: Check for branch change after release
         id: release_branch

@@ -34,7 +34,7 @@ The workflow auto-detects the repository's default branch.
 
 | Output | Description |
 |--------|-------------|
-| `version` | The version that was released |
+| `version` | The version that was released. Empty on a dry run, which does not build a gem. |
 
 Example using the output:
 ```yaml
@@ -51,14 +51,21 @@ jobs:
 
 ## What It Does
 
-1. Records starting branch
-2. Finalizes changelog using `rake build:checksum`
-3. Detects if reissue created a new branch during finalization
-4. Extracts version from built gem
-5. Commits finalization changes if any
-6. Publishes to RubyGems.org via Trusted Publishing (runs `rake release` which triggers reissue's version bump)
-7. Detects if reissue created a new branch during version bump
-8. Either creates a PR (if on new branch) or pushes directly to default branch
+1. Records the starting branch
+2. Runs `rake build:checksum release`, a single rake invocation that:
+   - runs `reissue:bump` and `reissue:finalize`, which are prerequisites of `build`
+   - builds the gem into `pkg/` and writes its SHA512 into `checksums/`
+   - tags the release and publishes to RubyGems.org via Trusted Publishing
+   - runs reissue's post-release version bump
+3. Reads the released version back out of the gem that was actually built
+4. Waits for the gem to appear in the RubyGems index
+5. Detects whether reissue moved onto a new branch
+6. Commits anything reissue left behind (including the new checksum) if it did not
+7. Pushes the branch and opens a PR for the post-release version bump
+
+`build:checksum` and `release` both depend on `build`, and rake runs a task at most
+once per process, so naming both on one command line builds the gem a single time
+and guarantees the checksum is written before anything is published.
 
 ## Rake Task Configuration
 
