@@ -115,17 +115,31 @@ jobs:
       # actually produced, which reissue may have bumped during `build`.
       - name: Get version being released
         id: version
-        if: inputs.dry_run != true
         working-directory: ${{ inputs.working_directory }}
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          gem_file=$(ls -t pkg/*.gem 2>/dev/null | head -1)
-          if [ -z "$gem_file" ]; then
-            echo "::error::No gem found in pkg/ - the release step did not build one"
-            exit 1
+          if [ "$DRY_RUN" = "true" ]; then
+            # Nothing was built, so ask reissue what a release would produce. The
+            # task computes the version without writing anything; reissue versions
+            # older than 0.5.2 do not define it, hence the fallback to unknown.
+            if raw=$(bundle exec rake reissue:next_version 2>/dev/null); then
+              version=$(printf '%s\n' "$raw" | tail -1 | tr -d '[:space:]')
+            else
+              version=""
+            fi
+          else
+            # Read the version from the gem that was actually produced, which
+            # reissue may have bumped during `build`.
+            gem_file=$(ls -t pkg/*.gem 2>/dev/null | head -1)
+            if [ -z "$gem_file" ]; then
+              echo "::error::No gem found in pkg/ - the release step did not build one"
+              exit 1
+            fi
+            version=$(ruby -e 'require "rubygems/package"; puts Gem::Package.new(ARGV[0]).spec.version' "$gem_file")
           fi
-          version=$(ruby -e 'require "rubygems/package"; puts Gem::Package.new(ARGV[0]).spec.version' "$gem_file")
           echo "released=$version" >> $GITHUB_OUTPUT
-          echo "Released version: $version"
+          echo "Version: ${version:-unknown}"
 
       - name: Wait for release to propagate
         if: inputs.dry_run != true
@@ -135,7 +149,14 @@ jobs:
       - name: Dry run - skip RubyGems publish
         if: inputs.dry_run == true
         working-directory: ${{ inputs.working_directory }}
-        run: echo "Dry run - no gem was built and nothing was published. The version is not known until a real run builds the gem."
+        env:
+          NEXT_VERSION: ${{ steps.version.outputs.released }}
+        run: |
+          if [ -n "$NEXT_VERSION" ]; then
+            echo "Dry run - would publish version $NEXT_VERSION to RubyGems. Nothing was built or published."
+          else
+            echo "Dry run - nothing was built or published. Could not determine the version: reissue:next_version is unavailable (reissue older than 0.5.2) or could not resolve one."
+          fi
 
       - name: Check for branch change after release
         id: release_branch

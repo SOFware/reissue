@@ -40,7 +40,13 @@ The workflow auto-detects the repository's default branch.
 
 | Output | Description |
 |--------|-------------|
-| `version` | The version that was released. Empty on a dry run, which does not build a gem. |
+| `version` | The version that was released. On a dry run, the version a release *would* produce. |
+
+A dry run builds nothing, so it asks `rake reissue:next_version` what a release
+would publish — that task derives the version without writing anything. The
+output is empty if reissue is older than 0.5.2 and does not define the task, or
+if there is no tag and trailer to resolve a version from; the dry run says so
+rather than failing.
 
 Example using the output:
 ```yaml
