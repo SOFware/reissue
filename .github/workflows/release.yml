@@ -16,3 +16,4 @@ jobs:
       git_user_email: 'gems@sofwarellc.com'
       git_user_name: 'SOFware'
       dry_run: ${{ inputs.dry_run }}
+      generate_checksum: true

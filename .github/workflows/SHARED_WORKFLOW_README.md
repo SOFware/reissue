@@ -27,6 +27,12 @@ All inputs are optional:
 | `git_user_email` | `github-actions[bot]@users.noreply.github.com` | Email for git commits |
 | `git_user_name` | `github-actions[bot]` | Name for git commits |
 | `dry_run` | `false` | Test workflow without publishing to RubyGems |
+| `generate_checksum` | `false` | Write a SHA512 of the built gem into `checksums/` before publishing |
+
+Set `generate_checksum: true` to opt into checksums. It is off by default so that
+repositories already using this workflow do not start committing a `checksums/`
+directory they never asked for — `reissue/gem.rb` adds `checksums` to the paths
+reissue commits, so the file would land in the post-release version bump.
 
 The workflow auto-detects the repository's default branch.
 
@@ -34,7 +40,13 @@ The workflow auto-detects the repository's default branch.
 
 | Output | Description |
 |--------|-------------|
-| `version` | The version that was released |
+| `version` | The version that was released. On a dry run, the version a release *would* produce. |
+
+A dry run builds nothing, so it asks `rake reissue:next_version` what a release
+would publish — that task derives the version without writing anything. The
+output is empty if reissue is older than 0.5.2 and does not define the task, or
+if there is no tag and trailer to resolve a version from; the dry run says so
+rather than failing.
 
 Example using the output:
 ```yaml
@@ -51,14 +63,22 @@ jobs:
 
 ## What It Does
 
-1. Records starting branch
-2. Finalizes changelog using `rake build:checksum`
-3. Detects if reissue created a new branch during finalization
-4. Extracts version from built gem
-5. Commits finalization changes if any
-6. Publishes to RubyGems.org via Trusted Publishing (runs `rake release` which triggers reissue's version bump)
-7. Detects if reissue created a new branch during version bump
-8. Either creates a PR (if on new branch) or pushes directly to default branch
+1. Records the starting branch
+2. Runs `rake release` (or `rake build:checksum release` when `generate_checksum`
+   is set), a single rake invocation that:
+   - runs `reissue:bump` and `reissue:finalize`, which are prerequisites of `build`
+   - builds the gem into `pkg/`, and writes its SHA512 into `checksums/` if asked
+   - tags the release and publishes to RubyGems.org via Trusted Publishing
+   - runs reissue's post-release version bump
+3. Reads the released version back out of the gem that was actually built
+4. Waits for the gem to appear in the RubyGems index
+5. Detects whether reissue moved onto a new branch
+6. Commits anything reissue left behind (including the new checksum) if it did not
+7. Pushes the branch and opens a PR for the post-release version bump
+
+`build:checksum` and `release` both depend on `build`, and rake runs a task at most
+once per process, so naming both on one command line builds the gem a single time
+and guarantees the checksum is written before anything is published.
 
 ## Rake Task Configuration
 
