@@ -126,6 +126,75 @@ class TestRakePreviewTask < Minitest::Test
     end
   end
 
+  def test_preview_reports_the_version_that_would_be_released
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        system("git init", out: File::NULL, err: File::NULL)
+        system("git config user.name 'Test'", out: File::NULL, err: File::NULL)
+        system("git config user.email 'test@example.com'", out: File::NULL, err: File::NULL)
+
+        File.write("test.txt", "initial")
+        system("git add test.txt", out: File::NULL, err: File::NULL)
+        system("git commit -m 'Initial'", out: File::NULL, err: File::NULL)
+        system("git tag v1.0.0", out: File::NULL, err: File::NULL)
+
+        create_commit_with_trailer("Feature", "Added: New feature\n\nVersion: minor")
+
+        File.write("Rakefile", <<~RUBY)
+          require "reissue/rake"
+
+          Reissue::Task.create :reissue do |task|
+            task.version_file = "version.rb"
+            task.fragment = :git
+          end
+        RUBY
+
+        File.write("version.rb", 'VERSION = "1.0.0"')
+
+        load "Rakefile"
+        result, _err = capture_io { Rake::Task["reissue:preview"].invoke }
+
+        assert_match(/Version to be released: 1\.1\.0/, result)
+      end
+    end
+  end
+
+  def test_preview_still_runs_when_the_version_cannot_be_determined
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        system("git init", out: File::NULL, err: File::NULL)
+        system("git config user.name 'Test'", out: File::NULL, err: File::NULL)
+        system("git config user.email 'test@example.com'", out: File::NULL, err: File::NULL)
+
+        File.write("test.txt", "initial")
+        system("git add test.txt", out: File::NULL, err: File::NULL)
+        system("git commit -m 'Initial'", out: File::NULL, err: File::NULL)
+        system("git tag v1.0.0", out: File::NULL, err: File::NULL)
+
+        create_commit_with_trailer("Feature", "Added: New feature")
+
+        File.write("Rakefile", <<~RUBY)
+          require "reissue/rake"
+
+          Reissue::Task.create :reissue do |task|
+            task.version_file = "version.rb"
+            task.fragment = :git
+            task.deferred_versioning = true
+          end
+        RUBY
+
+        File.write("version.rb", 'VERSION = "Unreleased"')
+
+        load "Rakefile"
+        result, _err = capture_io { Rake::Task["reissue:preview"].invoke }
+
+        # Preview is a reporting tool; it should say so rather than raise
+        assert_match(/Version to be released: cannot be determined/, result)
+        assert_match(/- New feature/, result)
+      end
+    end
+  end
+
   private
 
   def create_commit_with_trailer(subject, trailer)
