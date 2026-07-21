@@ -21,12 +21,12 @@ module Reissue
         when :patch
           segments.slice(0, 2) + segments.slice(2..-1).then { |array|
             array[-1] = array[-1].next
-            [array.map(&:to_s).join]
+            [array.join]
           }
         when :pre
           segments.slice(0, 3) + segments.slice(3..-1).then { |array|
             array[-1] = array[-1].next
-            [array.map(&:to_s).join]
+            [array.join]
           }
         else
           raise ArgumentError, "Invalid segment name: #{segment_name}"

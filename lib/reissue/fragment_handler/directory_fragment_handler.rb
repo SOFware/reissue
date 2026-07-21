@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "pathname"
-
 module Reissue
   # Handler for reading fragments from a directory
   class DirectoryFragmentHandler < FragmentHandler
