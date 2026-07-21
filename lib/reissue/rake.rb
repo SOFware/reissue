@@ -225,6 +225,41 @@ module Reissue
       end
     end
 
+    # Apply a version bump and leave the changelog agreeing with it.
+    #
+    # @param updater [Reissue::VersionUpdater] the updater to bump with
+    # @param bump [Symbol] the segment to bump
+    # @return [String] the version the bump landed on
+    def apply_version_bump(updater, bump)
+      new_version = updater.call(bump)
+      realign_unreleased_changelog(new_version)
+      bundle
+      puts "Version bumped (#{bump}) to #{new_version}"
+      new_version
+    end
+
+    # Point the changelog's unreleased entry at the version just bumped to.
+    #
+    # The bump moves the version file forward, but the unreleased entry still
+    # carries the number from the previous cycle. reissue:finalize dates whatever
+    # that entry says, so leaving it alone publishes a gem built at the new
+    # version while the only dated changelog entry names the old one.
+    #
+    # @param new_version [String] the version the bump landed on
+    def realign_unreleased_changelog(new_version)
+      return unless changelog_file && File.exist?(changelog_file)
+
+      changelog = Reissue::Parser.parse(File.read(changelog_file))
+      unreleased = changelog["versions"].find { |version| version["date"] == "Unreleased" }
+      return if unreleased.nil? || unreleased["version"] == new_version
+
+      unreleased["version"] = new_version
+
+      changelog_updater = Reissue::ChangelogUpdater.new(changelog_file)
+      changelog_updater.instance_variable_set(:@changelog, changelog)
+      changelog_updater.write(changelog_file)
+    end
+
     # Check if there are staged changes ready to commit.
     def changes_to_commit?
       _, _, status = Open3.capture3("git diff --cached --quiet")
@@ -492,9 +527,7 @@ module Reissue
         if tag_version && current_version == tag_version
           if bump
             updater = Reissue::VersionUpdater.new(version_file, version_redo_proc: version_redo_proc)
-            updater.call(bump)
-            bundle
-            puts "Version bumped (#{bump}) to #{updater.instance_variable_get(:@new_version)}"
+            apply_version_bump(updater, bump)
           end
         elsif tag_version && current_version != tag_version
           if bump
@@ -502,9 +535,7 @@ module Reissue
             desired_version = updater.redo(tag_version, bump)
 
             if desired_version > current_version
-              updater.call(bump)
-              bundle
-              puts "Version bumped (#{bump}) to #{updater.instance_variable_get(:@new_version)}"
+              apply_version_bump(updater, bump)
             else
               puts "Version already bumped (#{tag_version} → #{current_version}), skipping"
             end
@@ -513,9 +544,7 @@ module Reissue
           end
         elsif bump
           updater = Reissue::VersionUpdater.new(version_file, version_redo_proc: version_redo_proc)
-          updater.call(bump)
-          bundle
-          puts "Version bumped (#{bump}) to #{updater.instance_variable_get(:@new_version)}"
+          apply_version_bump(updater, bump)
         end
       end
     end
