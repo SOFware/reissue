@@ -345,6 +345,54 @@ Version trailers are case-insensitive:
 - **New features:** Use `Version: minor` for backwards-compatible new functionality
 - **Bug fixes:** Use `Version: patch` for backwards-compatible bug fixes (or omit - patch is the default post-release bump)
 
+## Post-release Runbook
+
+Reissue can maintain a runbook file listing manual steps to perform after a release — run a rake task, clean up data, re-index documents, and so on. This is aimed at applications; gems are unlikely to need it.
+
+```ruby
+Reissue::Task.create :reissue do |task|
+  task.version_file = "config/version.rb"
+  task.fragment = :git
+  task.runbook_file = "RUNBOOK.md"  # Default: nil (disabled)
+end
+```
+
+The runbook holds only the latest release. Items are checkboxes so operators can tick them off:
+
+```markdown
+# Runbook
+
+Steps to perform after releasing the version below.
+
+## [1.2.3] - 2026-07-21
+
+- [ ] Run `rake data:cleanup` (abc1234)
+- [ ] Re-index search documents (def5678)
+```
+
+### Adding Runbook Items
+
+Add `Runbook:` trailers to commit messages (case-insensitive, independent of the `fragment` setting):
+
+```bash
+git commit -m "Add data migration
+
+Fixed: Duplicate user records
+Runbook: Run \`rake data:cleanup\` after deploy"
+```
+
+You can also edit the checklist under `## [Unreleased]` directly; direct edits and trailers are merged and deduplicated.
+
+Note: `Runbook:` is reserved for the runbook — do not add "Runbook" to `changelog_sections`.
+
+### Lifecycle
+
+1. **During development** — items accumulate from `Runbook:` trailers and direct edits.
+2. **Finalize** (`rake reissue:finalize` / before `rake build`) — trailers since the last version tag are merged into the file and the header is stamped with the release version and date, matching the changelog. The file is committed with the finalize commit, so the release tag contains the finalized runbook.
+3. **New version setup** (`rake reissue` after release) — the runbook is cleared back to a header-only `## [Unreleased]` section. Prior runbooks remain reachable via release tags.
+
+`rake reissue:preview` also shows pending runbook items when `runbook_file` is configured.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt.

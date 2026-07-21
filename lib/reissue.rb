@@ -4,6 +4,7 @@ require_relative "reissue/version"
 require_relative "reissue/version_updater"
 require_relative "reissue/changelog_updater"
 require_relative "reissue/fragment_handler"
+require_relative "reissue/runbook"
 
 # Reissue is a module that provides functionality for updating version numbers and changelogs.
 module Reissue
@@ -40,7 +41,8 @@ module Reissue
     version_redo_proc: nil,
     fragment: nil,
     fragment_directory: nil,
-    tag_pattern: nil
+    tag_pattern: nil,
+    runbook_file: nil
   )
     # Handle deprecation
     if fragment_directory && !fragment
@@ -55,10 +57,11 @@ module Reissue
       changelog_updater = ChangelogUpdater.new(changelog_file)
       changelog_updater.call(new_version, date:, changes:, changelog_file:, version_limit:, retain_changelogs:, fragment:, tag_pattern:)
     end
+    Runbook.new(runbook_file).clear if runbook_file
     new_version
   end
 
-  def self.deferred_call(version_file:, changelog_file: "CHANGELOG.md", version_limit: 2, retain_changelogs: false, fragment: nil, tag_pattern: nil)
+  def self.deferred_call(version_file:, changelog_file: "CHANGELOG.md", version_limit: 2, retain_changelogs: false, fragment: nil, tag_pattern: nil, runbook_file: nil)
     version_updater = VersionUpdater.new(version_file)
     version_updater.set_version("Unreleased", version_file:)
     version_updater.update_release_date("Unreleased", version_file:)
@@ -68,10 +71,11 @@ module Reissue
       changelog_updater.call("Unreleased", date: nil, changes: {}, changelog_file:, version_limit:, retain_changelogs:, fragment:, tag_pattern:)
     end
 
+    Runbook.new(runbook_file).clear if runbook_file
     "Unreleased"
   end
 
-  def self.deferred_finalize(date = Date.today, version: nil, segment: nil, changelog_file: "CHANGELOG.md", retain_changelogs: false, fragment: nil, tag_pattern: nil, version_file: nil, version_redo_proc: nil)
+  def self.deferred_finalize(date = Date.today, version: nil, segment: nil, changelog_file: "CHANGELOG.md", retain_changelogs: false, fragment: nil, tag_pattern: nil, version_file: nil, version_redo_proc: nil, runbook_file: nil)
     resolved_version = if version&.match?(/^\d/)
       version
     elsif segment || version
@@ -145,7 +149,14 @@ module Reissue
     end
 
     changelog = changelog_updater.finalize(date: date, changelog_file: changelog_file, retain_changelogs: retain_changelogs, resolved_version: resolved_version)
-    changelog["versions"].first.slice("version", "date").values
+    changelog["versions"].first.slice("version", "date").values.tap do |finalized_version, finalized_date|
+      finalize_runbook(runbook_file, version: finalized_version, date: finalized_date, tag_pattern:) if runbook_file
+    end
+  end
+
+  private_class_method def self.finalize_runbook(runbook_file, version:, date:, tag_pattern: nil)
+    trailer_items = FragmentHandler.for(:git, tag_pattern:).read_runbook_entries
+    Runbook.new(runbook_file).finalize(version:, date:, trailer_items:)
   end
 
   private_class_method def self.resolve_version_from_tag(segment, tag_pattern: nil, version_redo_proc: nil)
@@ -165,7 +176,7 @@ module Reissue
   # @param fragment_directory [String] @deprecated Use fragment parameter instead
   #
   # @return [Array] The version number and release date.
-  def self.finalize(date = Date.today, changelog_file: "CHANGELOG.md", retain_changelogs: false, fragment: nil, fragment_directory: nil, tag_pattern: nil, version_file: nil)
+  def self.finalize(date = Date.today, changelog_file: "CHANGELOG.md", retain_changelogs: false, fragment: nil, fragment_directory: nil, tag_pattern: nil, version_file: nil, runbook_file: nil)
     # Handle deprecation
     if fragment_directory && !fragment
       warn "[DEPRECATION] `fragment_directory` parameter is deprecated. Please use `fragment` instead."
@@ -224,7 +235,9 @@ module Reissue
       version_updater.update_release_date(date.to_s, version_file:)
     end
 
-    changelog["versions"].first.slice("version", "date").values
+    changelog["versions"].first.slice("version", "date").values.tap do |finalized_version, finalized_date|
+      finalize_runbook(runbook_file, version: finalized_version, date: finalized_date, tag_pattern:) if runbook_file
+    end
   end
 
   # Reformats the changelog file to ensure it is correctly formatted.

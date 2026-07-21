@@ -37,6 +37,12 @@ module Reissue
     # Provide a callable to decide how to store the files.
     attr_accessor :retain_changelogs
 
+    # The path to a runbook file listing steps to perform after a release.
+    # Populated from "Runbook:" git trailers or direct edits, finalized with
+    # the release version, and cleared when a new version is prepared.
+    # Default: nil (disabled).
+    attr_accessor :runbook_file
+
     # The fragment configuration for changelog entries.
     # @return [String, nil] nil (disabled) or a directory path string for fragment files
     # @example Using directory-based fragments
@@ -126,6 +132,7 @@ module Reissue
       @updated_paths = []
       @changelog_file = "CHANGELOG.md"
       @retain_changelogs = false
+      @runbook_file = nil
       @fragment = nil
       @clear_fragments = false
       @commit = true
@@ -187,9 +194,9 @@ module Reissue
       !status.success?
     end
 
-    # Stage updated_paths that exist on disk.
+    # Stage updated_paths (and the runbook file) that exist on disk.
     def stage_updated_paths
-      existing = updated_paths.select { |p| File.exist?(p) }
+      existing = (updated_paths + [runbook_file].compact).select { |p| File.exist?(p) }
       if existing.any?
         run_command("git add #{existing.join(" ")}", "Failed to stage additional paths: #{existing.join(", ")}")
       end
@@ -206,7 +213,8 @@ module Reissue
             changelog_file:,
             version_limit:,
             fragment: fragment,
-            tag_pattern:
+            tag_pattern:,
+            runbook_file:
           )
         else
           segment = args[:segment] || "patch"
@@ -217,7 +225,8 @@ module Reissue
             version_limit:,
             version_redo_proc:,
             fragment: fragment,
-            tag_pattern:
+            tag_pattern:,
+            runbook_file:
           )
         end
         bundle
@@ -287,7 +296,8 @@ module Reissue
             fragment: fragment,
             tag_pattern:,
             version_file:,
-            version_redo_proc:
+            version_redo_proc:,
+            runbook_file:
           )
         else
           date = args[:version_or_segment] || Time.now.strftime("%Y-%m-%d")
@@ -297,7 +307,8 @@ module Reissue
             retain_changelogs:,
             fragment: fragment,
             tag_pattern:,
-            version_file:
+            version_file:,
+            runbook_file:
           )
         end
 
@@ -374,6 +385,20 @@ module Reissue
         else
           puts "Fragment handling is not configured."
           puts "Set task.fragment to a directory path or :git to enable changelog fragments."
+        end
+
+        if runbook_file
+          require_relative "fragment_handler"
+          runbook_entries = Reissue::FragmentHandler.for(:git, tag_pattern: tag_pattern).read_runbook_entries
+
+          puts
+          if runbook_entries.empty?
+            puts "No runbook items found."
+            puts "  (No Runbook: trailers found since last version tag)"
+          else
+            puts "Runbook items that will be added to #{runbook_file}:\n\n"
+            runbook_entries.each { |item| puts "- [ ] #{item}" }
+          end
         end
       end
 
@@ -486,6 +511,9 @@ namespace :reissue do
         task.fragment = :git                      # Use git commit trailers (Added:, Fixed:, etc.)
         # task.fragment = "changelog_fragments"   # Or use a directory of fragment files
         task.clear_fragments = false              # Clear fragment files after release. Not necessary when using git trailers.
+
+        # Post-release runbook (mainly for applications)
+        # task.runbook_file = "RUNBOOK.md"        # Maintain a runbook from Runbook: git trailers
 
         # Git workflow options
         task.commit = true                        # Auto-commit version bumps
