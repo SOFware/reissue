@@ -27,6 +27,12 @@ All inputs are optional:
 | `git_user_email` | `github-actions[bot]@users.noreply.github.com` | Email for git commits |
 | `git_user_name` | `github-actions[bot]` | Name for git commits |
 | `dry_run` | `false` | Test workflow without publishing to RubyGems |
+| `generate_checksum` | `false` | Write a SHA512 of the built gem into `checksums/` before publishing |
+
+Set `generate_checksum: true` to opt into checksums. It is off by default so that
+repositories already using this workflow do not start committing a `checksums/`
+directory they never asked for — `reissue/gem.rb` adds `checksums` to the paths
+reissue commits, so the file would land in the post-release version bump.
 
 The workflow auto-detects the repository's default branch.
 
@@ -52,9 +58,10 @@ jobs:
 ## What It Does
 
 1. Records the starting branch
-2. Runs `rake build:checksum release`, a single rake invocation that:
+2. Runs `rake release` (or `rake build:checksum release` when `generate_checksum`
+   is set), a single rake invocation that:
    - runs `reissue:bump` and `reissue:finalize`, which are prerequisites of `build`
-   - builds the gem into `pkg/` and writes its SHA512 into `checksums/`
+   - builds the gem into `pkg/`, and writes its SHA512 into `checksums/` if asked
    - tags the release and publishes to RubyGems.org via Trusted Publishing
    - runs reissue's post-release version bump
 3. Reads the released version back out of the gem that was actually built

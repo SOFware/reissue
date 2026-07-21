@@ -27,6 +27,11 @@ on:
         required: false
         type: string
         default: '.'
+      generate_checksum:
+        description: 'Write a SHA512 of the built gem into checksums/ before publishing'
+        required: false
+        type: boolean
+        default: false
     outputs:
       version:
         description: 'The version that was released'
@@ -91,12 +96,20 @@ jobs:
         if: inputs.dry_run != true
         uses: rubygems/configure-rubygems-credentials@v2.1.0
 
-      # build:checksum and release share the same `build` prerequisite, so a
-      # single rake invocation builds once and writes checksums/ before pushing.
+      # build:checksum and release share the same `build` prerequisite, and rake
+      # runs a task at most once per process, so naming both here builds the gem
+      # a single time and writes checksums/ before anything is pushed.
       - name: Release gem to RubyGems
         if: inputs.dry_run != true
         working-directory: ${{ inputs.working_directory }}
-        run: bundle exec rake build:checksum release
+        env:
+          GENERATE_CHECKSUM: ${{ inputs.generate_checksum }}
+        run: |
+          if [ "$GENERATE_CHECKSUM" = "true" ]; then
+            bundle exec rake build:checksum release
+          else
+            bundle exec rake release
+          fi
 
       # Must run after the build: the version is read from the gem that was
       # actually produced, which reissue may have bumped during `build`.
