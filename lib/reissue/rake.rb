@@ -188,6 +188,43 @@ module Reissue
       end
     end
 
+    # The version the next release would use, derived exactly the way reissue:bump
+    # derives it, without writing anything.
+    #
+    # @return [Gem::Version] the version a release would publish
+    def next_release_version
+      require_relative "fragment_handler"
+      require_relative "version_updater"
+
+      # reissue:bump only consults git trailers for :git fragments.
+      handler = (Reissue::FragmentHandler.for(:git, tag_pattern: tag_pattern) if fragment == :git)
+      tag_version = handler&.last_tag_version
+      bump = handler&.read_version_bump
+      updater = Reissue::VersionUpdater.new(version_file, version_redo_proc: version_redo_proc)
+
+      if deferred_versioning
+        # The version file holds "Unreleased"; finalize resolves the real version
+        # from the last tag and the trailer.
+        unless tag_version && bump
+          raise "Cannot determine the next version. Deferred versioning resolves it from " \
+                "the last version tag and a Version: trailer, and one of those is missing."
+        end
+        return updater.redo(tag_version, bump)
+      end
+
+      current_version = ::Gem::Version.new(File.read(version_file).match(Reissue::VersionUpdater::VERSION_MATCH)[0])
+
+      if bump.nil?
+        current_version
+      elsif tag_version && tag_version != current_version
+        # A post-release bump already moved the file past the tag, so the trailer
+        # only counts if it would land beyond where the file already is.
+        [updater.redo(tag_version, bump), current_version].max
+      else
+        updater.redo(current_version, bump)
+      end
+    end
+
     # Check if there are staged changes ready to commit.
     def changes_to_commit?
       _, _, status = Open3.capture3("git diff --cached --quiet")
@@ -359,6 +396,15 @@ module Reissue
             end
           end
 
+          # Preview reports; it does not fail. next_release_version raises when
+          # deferred versioning has no tag or trailer to resolve from.
+          previewed_version = begin
+            next_release_version
+          rescue RuntimeError
+            nil
+          end
+          puts "Version to be released: #{previewed_version || "cannot be determined"}\n\n"
+
           entries = handler.read
 
           if entries.empty?
@@ -416,6 +462,11 @@ module Reissue
             puts clear_message
           end
         end
+      end
+
+      desc "Print the version the next release would use, without changing anything"
+      task "#{name}:next_version" do
+        puts next_release_version
       end
 
       desc "Bump version based on git trailers"
