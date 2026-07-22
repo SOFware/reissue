@@ -357,6 +357,8 @@ Reissue::Task.create :reissue do |task|
 end
 ```
 
+You don't have to create the file yourself — the first `rake reissue` or `rake reissue:finalize` writes it when `runbook_file` is set. To start from a template you can customize, run `rake reissue:initialize[runbook]`, which creates `RUNBOOK.md` (pass a different name, e.g. `rake reissue:initialize[OPERATIONS.md]`, to use another path).
+
 The runbook holds only the latest release. Items are checkboxes so operators can tick them off:
 
 ```markdown

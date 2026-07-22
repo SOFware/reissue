@@ -525,8 +525,8 @@ end
 # Define the reissue:initialize task as a standalone task
 # This works without any configuration, allowing users to bootstrap their project
 namespace :reissue do
-  desc "Initialize reissue by creating a CHANGELOG.md and showing Rakefile configuration"
-  task :initialize do
+  desc "Initialize reissue by creating a CHANGELOG.md and showing Rakefile configuration. Pass [runbook] to also create a RUNBOOK.md."
+  task :initialize, [:runbook] do |task, args|
     changelog_file = "CHANGELOG.md"
 
     if File.exist?(changelog_file)
@@ -534,6 +534,16 @@ namespace :reissue do
     else
       Reissue.generate_changelog(changelog_file)
       puts "✓ Created #{changelog_file}"
+    end
+
+    if args[:runbook]
+      runbook_file = (args[:runbook] == "runbook") ? "RUNBOOK.md" : args[:runbook]
+      if File.exist?(runbook_file)
+        puts "✓ #{runbook_file} already exists"
+      else
+        Reissue::Runbook.new(runbook_file).generate
+        puts "✓ Created #{runbook_file}"
+      end
     end
 
     puts
@@ -565,6 +575,7 @@ namespace :reissue do
 
         # Post-release runbook (mainly for applications)
         # task.runbook_file = "RUNBOOK.md"        # Maintain a runbook from Runbook: git trailers
+        #                                         # Seed a starter file with: rake reissue:initialize[runbook]
 
         # Git workflow options
         task.commit = true                        # Auto-commit version bumps
