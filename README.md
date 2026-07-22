@@ -370,6 +370,8 @@ Steps to perform after releasing the version below.
 - [ ] Re-index search documents (def5678)
 ```
 
+The title and the preamble beneath it are yours to edit. Give the file a custom heading and intro and reissue preserves them across finalize and new-version resets — only the version heading and the checklist are rewritten, the same way a custom preamble survives in `CHANGELOG.md`.
+
 ### Adding Runbook Items
 
 Add `Runbook:` trailers to commit messages (case-insensitive, independent of the `fragment` setting):
