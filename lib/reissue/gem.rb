@@ -27,7 +27,7 @@ module Reissue
       return unless defined?(Bundler::GemHelper)
 
       helper = Bundler::GemHelper.instance
-      return unless helper.respond_to?(:gemspec) && helper.gemspec
+      return unless helper&.gemspec
 
       helper.gemspec.version = ::Gem::Version.new(new_version)
     end
