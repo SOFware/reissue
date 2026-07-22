@@ -5,6 +5,8 @@ require "rake"
 require "tmpdir"
 
 class TestGemIntegration < Minitest::Test
+  include GitRepoHelpers
+
   def setup
     @rake = Rake::Application.new
     Rake.application = @rake
@@ -88,9 +90,7 @@ class TestGemIntegration < Minitest::Test
   private
 
   def setup_git_repo(version)
-    system("git init", out: File::NULL, err: File::NULL)
-    system("git config user.name 'Test'", out: File::NULL, err: File::NULL)
-    system("git config user.email 'test@example.com'", out: File::NULL, err: File::NULL)
+    init_git_repo
 
     File.write("version.rb", "VERSION = \"#{version}\"")
     File.write("CHANGELOG.md", <<~CHANGELOG)
@@ -103,8 +103,7 @@ class TestGemIntegration < Minitest::Test
       - Initial release
     CHANGELOG
 
-    system("git add .", out: File::NULL, err: File::NULL)
-    system("git commit -m 'Initial commit'", out: File::NULL, err: File::NULL)
+    commit_everything("Initial commit")
     system("git branch -M main", out: File::NULL, err: File::NULL)
   end
 end

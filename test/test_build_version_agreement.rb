@@ -3,7 +3,6 @@
 require "test_helper"
 require "rake"
 require "stringio"
-require "tempfile"
 require "tmpdir"
 
 # The build task runs reissue:bump then reissue:finalize. Whatever version the
@@ -11,6 +10,8 @@ require "tmpdir"
 # finalized alongside it has to carry that same version. When they disagree the
 # release publishes a version with no changelog entry of its own.
 class TestBuildVersionAgreement < Minitest::Test
+  include GitRepoHelpers
+
   def setup
     @rake = Rake::Application.new
     Rake.application = @rake
@@ -48,9 +49,7 @@ class TestBuildVersionAgreement < Minitest::Test
   private
 
   def setup_project(version:)
-    system("git init", out: File::NULL, err: File::NULL)
-    system("git config user.name 'Test'", out: File::NULL, err: File::NULL)
-    system("git config user.email 'test@example.com'", out: File::NULL, err: File::NULL)
+    init_git_repo
 
     File.write("version.rb", "VERSION = \"#{version}\"\nRELEASE_DATE = \"Unreleased\"\n")
     File.write("CHANGELOG.md", <<~CHANGELOG)
@@ -65,21 +64,8 @@ class TestBuildVersionAgreement < Minitest::Test
       - Something earlier
     CHANGELOG
 
-    system("git add .", out: File::NULL, err: File::NULL)
-    system("git commit -m 'Initial'", out: File::NULL, err: File::NULL)
-    system("git tag v#{version}", out: File::NULL, err: File::NULL)
-  end
-
-  def create_commit_with_trailer(subject, trailer)
-    filename = "test_#{Time.now.to_f}.txt"
-    File.write(filename, "content")
-    system("git add #{filename}", out: File::NULL, err: File::NULL)
-
-    Tempfile.create("commit_msg") do |f|
-      f.write("#{subject}\n\n#{trailer}")
-      f.flush
-      system("git commit -F #{f.path}", out: File::NULL, err: File::NULL)
-    end
+    commit_everything("Initial")
+    tag_version(version)
   end
 
   def create_rakefile
