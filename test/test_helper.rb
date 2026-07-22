@@ -10,3 +10,5 @@ require "debug"
 require "date"
 
 require "minitest/autorun"
+
+require_relative "support/git_repo_helpers"

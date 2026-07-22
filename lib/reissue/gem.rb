@@ -7,6 +7,30 @@ module Reissue
       super
       @updated_paths << "checksums"
     end
+
+    # Keep bundler's gemspec in step with the bump.
+    #
+    # Bundler loads the gemspec when bundler/gem_tasks is required, well before
+    # reissue:bump rewrites the version file. `gem build` shells out and re-reads
+    # the file, so the gem itself carries the bumped version, but the release tag
+    # and bundler's confirmation messages read the copy held in memory. Without
+    # this they name the version from before the bump, and the release publishes
+    # one version under another version's tag.
+    def apply_version_bump(updater, bump)
+      new_version = super
+      sync_bundler_gemspec_version(new_version)
+      new_version
+    end
+
+    # @param new_version [String] the version the bump landed on
+    def sync_bundler_gemspec_version(new_version)
+      return unless defined?(Bundler::GemHelper)
+
+      helper = Bundler::GemHelper.instance
+      return unless helper&.gemspec
+
+      helper.gemspec.version = ::Gem::Version.new(new_version)
+    end
   end
 end
 Reissue::Task.prepend Reissue::Gem

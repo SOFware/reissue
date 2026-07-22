@@ -6,6 +6,8 @@ require "stringio"
 require "tmpdir"
 
 class TestRakeVersionBumpTask < Minitest::Test
+  include GitRepoHelpers
+
   def setup
     @rake = Rake::Application.new
     Rake.application = @rake
@@ -187,9 +189,7 @@ class TestRakeVersionBumpTask < Minitest::Test
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         # Setup git repo WITHOUT a tag
-        system("git init", out: File::NULL, err: File::NULL)
-        system("git config user.name 'Test'", out: File::NULL, err: File::NULL)
-        system("git config user.email 'test@example.com'", out: File::NULL, err: File::NULL)
+        init_git_repo
 
         # Create initial version file
         File.write("version.rb", 'VERSION = "0.1.0"')
@@ -323,28 +323,11 @@ class TestRakeVersionBumpTask < Minitest::Test
   private
 
   def setup_git_repo_with_version(version)
-    system("git init", out: File::NULL, err: File::NULL)
-    system("git config user.name 'Test'", out: File::NULL, err: File::NULL)
-    system("git config user.email 'test@example.com'", out: File::NULL, err: File::NULL)
+    init_git_repo
 
-    # Create initial version file and tag
     File.write("version.rb", "VERSION = \"#{version}\"")
-    system("git add version.rb", out: File::NULL, err: File::NULL)
-    system("git commit -m 'Initial version'", out: File::NULL, err: File::NULL)
-    system("git tag v#{version}", out: File::NULL, err: File::NULL)
-  end
-
-  def create_commit_with_trailer(subject, trailer)
-    filename = "test_#{Time.now.to_f}.txt"
-    File.write(filename, "content")
-    system("git add #{filename}", out: File::NULL, err: File::NULL)
-
-    message = "#{subject}\n\n#{trailer}"
-    Tempfile.create("commit_msg") do |f|
-      f.write(message)
-      f.flush
-      system("git commit -F #{f.path}", out: File::NULL, err: File::NULL)
-    end
+    commit_everything("Initial version")
+    tag_version(version)
   end
 
   def create_rakefile
