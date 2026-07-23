@@ -81,6 +81,58 @@ module Reissue
       end
     end
 
+    def test_creates_runbook_when_runbook_argument_given
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          refute File.exist?("RUNBOOK.md")
+
+          output = capture_io { Rake::Task["reissue:initialize"].invoke("runbook") }.first
+
+          assert File.exist?("RUNBOOK.md"), "RUNBOOK.md should be created"
+          assert_match(/Created RUNBOOK\.md/, output)
+
+          content = File.read("RUNBOOK.md")
+          assert_match(/# Runbook/, content)
+          assert_match(/## \[Unreleased\]/, content)
+        end
+      end
+    end
+
+    def test_does_not_create_runbook_without_argument
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          capture_io { Rake::Task["reissue:initialize"].invoke }
+
+          refute File.exist?("RUNBOOK.md"), "RUNBOOK.md should not be created without the runbook argument"
+        end
+      end
+    end
+
+    def test_does_not_overwrite_existing_runbook
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          existing_content = "# My Runbook\n\nCustom operator notes.\n\n## [Unreleased]\n"
+          File.write("RUNBOOK.md", existing_content)
+
+          output = capture_io { Rake::Task["reissue:initialize"].invoke("runbook") }.first
+
+          assert_equal existing_content, File.read("RUNBOOK.md")
+          assert_match(/RUNBOOK\.md already exists/, output)
+        end
+      end
+    end
+
+    def test_creates_runbook_at_custom_filename
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          output = capture_io { Rake::Task["reissue:initialize"].invoke("OPERATIONS.md") }.first
+
+          assert File.exist?("OPERATIONS.md"), "custom runbook filename should be created"
+          assert_match(/Created OPERATIONS\.md/, output)
+        end
+      end
+    end
+
     def test_created_changelog_has_proper_format
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
