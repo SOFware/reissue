@@ -71,6 +71,57 @@ class TestRunbook < Minitest::Spec
     end
   end
 
+  describe "preamble preservation" do
+    it "preserves a custom title and preamble when clearing" do
+      File.write(@tempfile.path, <<~MD)
+        # Deploy Runbook
+
+        These steps must be done by an operator with production access.
+        Tick them off as you go.
+
+        ## [1.2.3] - 2026-07-21
+
+        - [x] Run cleanup
+      MD
+      @runbook.clear
+
+      contents = File.read(@tempfile.path)
+      assert_match(/# Deploy Runbook/, contents)
+      assert_match(/These steps must be done by an operator with production access\./, contents)
+      assert_match(/Tick them off as you go\./, contents)
+      assert_match(/## \[Unreleased\]/, contents)
+      refute_match(/Run cleanup/, contents)
+    end
+
+    it "preserves a custom title and preamble when finalizing" do
+      File.write(@tempfile.path, <<~MD)
+        # Deploy Runbook
+
+        Operator-only steps.
+
+        ## [Unreleased]
+
+        - [ ] Rotate credentials
+      MD
+      @runbook.finalize(version: "1.2.3", date: "2026-07-21")
+
+      contents = File.read(@tempfile.path)
+      assert_match(/# Deploy Runbook/, contents)
+      assert_match(/Operator-only steps\./, contents)
+      assert_match(/## \[1\.2\.3\] - 2026-07-21/, contents)
+      assert_match(/- \[ \] Rotate credentials/, contents)
+    end
+
+    it "falls back to the default title and preamble for a header-only file" do
+      @runbook.generate
+      @runbook.clear
+
+      contents = File.read(@tempfile.path)
+      assert_match(/# Runbook/, contents)
+      assert_match(/Steps to perform after releasing the version below\./, contents)
+    end
+  end
+
   describe "finalize" do
     it "stamps the header with the version and date" do
       @runbook.generate
