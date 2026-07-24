@@ -194,9 +194,19 @@ jobs:
             branch="${{ steps.manual_branch.outputs.branch }}"
           fi
           git push -u origin "$branch"
-          gh pr create \
-            --title "Bump version for next release" \
-            --body "Post-release version bump created by reissue rake task." \
-            --base ${{ github.event.repository.default_branch }}
+          # A transient API failure here must not fail the release: the gem is
+          # already published and the branch pushed, so retry before giving up.
+          for attempt in 1 2 3; do
+            if gh pr create \
+              --title "Bump version for next release" \
+              --body "Post-release version bump created by reissue rake task." \
+              --base ${{ github.event.repository.default_branch }}; then
+              exit 0
+            fi
+            echo "PR creation failed (attempt $attempt of 3); retrying in 30s..."
+            sleep 30
+          done
+          echo "::error::Could not create the post-release PR after 3 attempts. The branch '$branch' is pushed — open the PR manually."
+          exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
