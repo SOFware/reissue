@@ -123,6 +123,10 @@ Reissue::Task.create :reissue do |task|
   # Optional: Whether to commit the results of the finalize task. Defaults to true
   task.commit_finalize = true
   
+  # Optional: A callable returning the finalize commit subject, given version and date.
+  # Defaults to: ->(version, date) { "Finalize changelog for #{version}" }
+  task.finalize_message = ->(version, date) { "Release #{version}" }
+  
   # Optional: Whether to push the changes automatically. Defaults to false
   # Options: false, true (push working branch), :branch (create and push new branch)
   task.push_finalize = :branch

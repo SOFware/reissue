@@ -97,7 +97,7 @@ class TestRakeBranchNaming < Minitest::Test
           Rake::Task["reissue:finalize"].invoke("2025-11-21")
         end
 
-        assert_match(/Finalize the changelog/, output)
+        assert_match(/Finalize changelog/, output)
       end
     end
   end
@@ -144,7 +144,7 @@ class TestRakeBranchNaming < Minitest::Test
 
         # Verify the checksums file was committed
         log_output = `git log --oneline -1`.strip
-        assert_match(/Finalize the changelog/, log_output)
+        assert_match(/Finalize changelog/, log_output)
 
         # Verify checksums was included in the commit
         diff_output = `git show --name-only --format="" HEAD`.strip
