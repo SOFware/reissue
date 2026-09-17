@@ -79,6 +79,11 @@ module Reissue
     # Whether to commit the finalize change to the changelog. Default: true.
     attr_accessor :commit_finalize
 
+    # Callable receiving the version and release date, returning the commit subject.
+    # The default omits the date to stay under the 50-character subject limit.
+    # Default: ->(version, date) { "Finalize changelog for #{version}" }
+    attr_accessor :finalize_message
+
     # Whether to commit the clear fragments change.
     # Returns false for :git fragments since there are no files to commit.
     attr_writer :commit_clear_fragments
@@ -137,6 +142,7 @@ module Reissue
       @clear_fragments = false
       @commit = true
       @commit_finalize = true
+      @finalize_message = ->(version, _date) { "Finalize changelog for #{version}" }
       @commit_clear_fragments = true
       @push_finalize = false
       @version_limit = 2
@@ -384,7 +390,7 @@ module Reissue
           )
         end
 
-        finalize_message = "Finalize the changelog for version #{version} on #{date}"
+        message = finalize_message.call(version, date)
         if commit_finalize
           if finalize_with_branch?
             tasker["#{name}:branch"].invoke("finalize/#{version}")
@@ -392,13 +398,13 @@ module Reissue
           run_command("git add -u", "Failed to stage finalized changelog")
           stage_updated_paths
           if changes_to_commit?
-            run_command("git commit -m '#{finalize_message}'", "Failed to commit finalized changelog")
+            run_command("git commit -m '#{message}'", "Failed to commit finalized changelog")
             tasker["#{name}:push"].invoke if push_finalize?
           else
-            puts finalize_message
+            puts message
           end
         else
-          puts finalize_message
+          puts message
         end
       end
 
