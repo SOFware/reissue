@@ -146,6 +146,36 @@ jobs:
         working-directory: ${{ inputs.working_directory }}
         run: gem exec rubygems-await pkg/*.gem
 
+      - name: Create GitHub release
+        if: inputs.dry_run != true
+        working-directory: ${{ inputs.working_directory }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.released }}
+        run: |
+          tag="v$VERSION"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "GitHub release $tag already exists"
+            exit 0
+          fi
+          notes=$(git show "$tag:./CHANGELOG.md" 2>/dev/null |
+            awk -v v="$VERSION" '
+              index($0, "## [" v "]") == 1 { found = 1; next }
+              found && /^## \[/ { exit }
+              found { print }
+            ') || true
+          args=(--title "$tag" --verify-tag)
+          if [ -n "$(printf '%s' "$notes" | tr -d '[:space:]')" ]; then
+            args+=(--notes "$notes")
+          else
+            args+=(--generate-notes)
+          fi
+          if [[ "$VERSION" =~ [a-zA-Z] ]]; then
+            args+=(--prerelease)
+          fi
+          gh release create "$tag" "${args[@]}" ||
+            echo "::warning::Could not create GitHub release $tag. Create it manually."
+
       - name: Dry run - skip RubyGems publish
         if: inputs.dry_run == true
         working-directory: ${{ inputs.working_directory }}
