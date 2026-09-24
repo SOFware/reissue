@@ -72,11 +72,9 @@ jobs:
    - runs reissue's post-release version bump
 3. Reads the released version back out of the gem that was actually built
 4. Waits for the gem to appear in the RubyGems index
-5. Creates a GitHub release for the tag, using the version's changelog entry as
-   its notes
-6. Detects whether reissue moved onto a new branch
-7. Commits anything reissue left behind (including the new checksum) if it did not
-8. Pushes the branch and opens a PR for the post-release version bump
+5. Detects whether reissue moved onto a new branch
+6. Commits anything reissue left behind (including the new checksum) if it did not
+7. Pushes the branch and opens a PR for the post-release version bump
 
 `build:checksum` and `release` both depend on `build`, and rake runs a task at most
 once per process, so naming both on one command line builds the gem a single time
